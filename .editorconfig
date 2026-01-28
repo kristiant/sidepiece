@@ -1,0 +1,37 @@
+# EditorConfig - https://editorconfig.org
+
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Swift files
+[*.swift]
+indent_size = 4
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# JSON
+[*.json]
+indent_size = 2
+
+# YAML
+[*.{yml,yaml}]
+indent_size = 2
+
+# Xcode project files
+[*.pbxproj]
+indent_style = tab
+
+# Plist files
+[*.plist]
+indent_style = tab

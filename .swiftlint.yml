@@ -1,0 +1,174 @@
+# SwiftLint Configuration for Sidepiece
+# https://github.com/realm/SwiftLint
+
+# Paths to include (relative to config file)
+included:
+  - Sidepiece
+  - SidepieceTests
+
+# Paths to exclude
+excluded:
+  - Pods
+  - DerivedData
+  - .build
+
+# Rule configuration
+disabled_rules:
+  - trailing_comma                        # Allow trailing commas
+  - opening_brace                         # Allow newline before opening brace
+  - type_contents_order                   # Too pedantic about ordering
+  - vertical_whitespace_opening_braces    # Too strict
+  - vertical_whitespace_closing_braces    # Too strict
+  - force_unwrapping                      # Sometimes necessary for URLs, app directories
+  - sorted_imports                        # Auto-fixable, not worth blocking
+  - attributes                            # Too strict about attribute placement
+  - prefer_self_in_static_references      # Minor style preference
+  - trailing_closure                      # Sometimes explicit closures are clearer
+  - todo                                  # Allow TODO comments during development
+  - redundant_string_enum_value           # Be explicit
+
+opt_in_rules:
+  - array_init
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - convenience_type
+  - discouraged_object_literal
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - enum_case_associated_values_count
+  - explicit_init
+  - extension_access_modifier
+  - fallthrough
+  - fatal_error_message
+  - file_name_no_space
+  - first_where
+  - flatmap_over_map_reduce
+  - identical_operands
+  - implicit_return
+  - implicitly_unwrapped_optional
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - modifier_order
+  - multiline_arguments
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - multiline_parameters_brackets
+  - operator_usage_whitespace
+  - overridden_super_call
+  - pattern_matching_keywords
+  - prefer_self_type_over_type_of_self
+  - prefer_zero_over_explicit_init
+  - private_action
+  - private_outlet
+  - prohibited_super_call
+  - reduce_into
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - sorted_first_last
+  - static_operator
+  - toggle_bool
+  - unavailable_function
+  - unneeded_parentheses_in_closure_argument
+  - unowned_variable_capture
+  - untyped_error_in_catch
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+# Line length
+line_length:
+  warning: 120
+  error: 150
+  ignores_comments: true
+  ignores_urls: true
+
+# Type body length
+type_body_length:
+  warning: 300
+  error: 500
+
+# Function body length
+function_body_length:
+  warning: 50
+  error: 100
+
+# File length
+file_length:
+  warning: 500
+  error: 1000
+  ignore_comment_only_lines: true
+
+# Cyclomatic complexity (raised for large switch statements)
+cyclomatic_complexity:
+  warning: 35
+  error: 50
+
+# Nesting
+nesting:
+  type_level:
+    warning: 3
+    error: 5
+  function_level:
+    warning: 3
+    error: 5
+
+# Identifier name
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+    - k
+    - to
+    - at
+    - of
+    - on
+
+# Type name
+type_name:
+  min_length:
+    warning: 3
+    error: 2
+  max_length:
+    warning: 50
+    error: 60
+
+# Large tuple
+large_tuple:
+  warning: 3
+  error: 4
+
+# Trailing whitespace
+trailing_whitespace:
+  ignores_empty_lines: true
+
+# Vertical whitespace
+vertical_whitespace:
+  max_empty_lines: 2
+
+# Custom rules for Australian English spellings
+custom_rules:
+  no_american_color:
+    name: "Use colour not color in user-facing strings"
+    regex: '"[^"]*[Cc]olor[^"]*"'
+    message: "Use 'colour' (Australian English) in user-facing strings"
+    severity: warning
+    match_kinds:
+      - string

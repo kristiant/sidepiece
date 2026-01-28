@@ -1,0 +1,89 @@
+name: Sidepiece
+options:
+  bundleIdPrefix: com.sidepiece
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    PRODUCT_NAME: Sidepiece
+
+configs:
+  Debug:
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+    SWIFT_OPTIMIZATION_LEVEL: -Onone
+  Release:
+    DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+    SWIFT_OPTIMIZATION_LEVEL: -O
+
+targets:
+  Sidepiece:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sidepiece
+        excludes:
+          - "**/.DS_Store"
+    resources:
+      - path: Sidepiece/Resources
+    settings:
+      base:
+        INFOPLIST_FILE: Sidepiece/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sidepiece/Resources/Sidepiece.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_BUNDLE_IDENTIFIER: com.sidepiece.app
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        # Menu bar app settings
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        COMBINE_HIDPI_IMAGES: YES
+    entitlements:
+      path: Sidepiece/Resources/Sidepiece.entitlements
+    preBuildScripts:
+      - name: SwiftLint
+        script: |
+          if which swiftlint >/dev/null; then
+            swiftlint
+          else
+            echo "warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint"
+          fi
+        basedOnDependencyAnalysis: false
+
+  SidepieceTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SidepieceTests
+    dependencies:
+      - target: Sidepiece
+    settings:
+      base:
+        INFOPLIST_FILE: SidepieceTests/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.sidepiece.app.tests
+
+schemes:
+  Sidepiece:
+    build:
+      targets:
+        Sidepiece: all
+        SidepieceTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SidepieceTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

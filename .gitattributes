@@ -1,0 +1,56 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Swift source files
+*.swift text diff=swift
+
+# Xcode project files
+*.pbxproj binary merge=union
+*.xcworkspacedata text
+*.xcscheme text
+
+# Plists
+*.plist text
+
+# Storyboards and XIBs (treat as text for better diffs)
+*.storyboard text
+*.xib text
+
+# Assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.pdf binary
+
+# Fonts
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Audio
+*.mp3 binary
+*.wav binary
+*.aiff binary
+*.m4a binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Documentation
+*.md text diff=markdown
+*.txt text
+
+# Configuration
+*.json text
+*.yaml text
+*.yml text
+
+# Ignore for export
+.gitattributes export-ignore
+.gitignore export-ignore
