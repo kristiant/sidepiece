@@ -12,9 +12,10 @@ Sidepiece is a macOS utility for managing and triggering snippets/macros via glo
 
 ## Critical Workflows
 
-### 1. Project Generation
-We use `XcodeGen` to manage the project file. If you modify `project.yml` or add new files:
-- Run `xcodegen generate` to update the Xcode project.
+### 1. Project Generation & Development
+We use `XcodeGen` to manage the project file.
+- **Preferred Workflow**: Use `scripts/build_and_run.sh`. This script handles project generation, builds to a stable path, resets common permission bugs, and launches the app.
+- **Manual Generation**: Run `xcodegen generate` if you only need to update the Xcode project without building.
 
 ### 2. Accessibility Permissions
 The app uses an event tap (`CGEvent.tapCreate`) to monitor global numpad presses. This requires **Accessibility Permissions**.
