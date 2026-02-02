@@ -54,6 +54,7 @@ xcuserdata/
 *.xcscmblueprint
 
 # Xcode local settings
+*.xcodeproj/
 *.xcodeproj/**/xcuserdata/
 *.xcworkspace/**/xcuserdata/
 
