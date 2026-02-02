@@ -7,6 +7,7 @@ struct KeyBindingConfigView: View {
     @ObservedObject var snippetRepository: SnippetRepository
     @ObservedObject var configurationManager: ConfigurationManager
     
+    
     @State private var selectedCategory: NumpadKey.Category = .numbers
     @State private var selectedKey: NumpadKey?
     @State private var isEditingSnippet = false
@@ -14,20 +15,31 @@ struct KeyBindingConfigView: View {
     @State private var searchText = ""
     
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            categoryPicker
-            Divider()
-            keyGrid
-            Divider()
-            footer
+        NavigationStack {
+            VStack(spacing: 0) {
+                header
+                Divider()
+                categoryPicker
+                Divider()
+                keyGrid
+                Divider()
+                footer
+            }
+            .frame(width: 380, height: 520)
+            .navigationDestination(for: String.self) { destination in
+                if destination == "settings" {
+                    SettingsView(
+                        configurationManager: configurationManager,
+                        snippetRepository: snippetRepository
+                    )
+                }
+            }
         }
-        .frame(width: 380, height: 520)
         .sheet(isPresented: $isEditingSnippet) {
-            SnippetEditorSheet(
+            KeyBindingEditorSheet(
                 binding: $editingBinding,
                 snippetRepository: snippetRepository,
+                configurationManager: configurationManager,
                 onSave: saveBinding,
                 onDelete: deleteBinding
             )
@@ -70,9 +82,8 @@ struct KeyBindingConfigView: View {
                 }
             }
             Divider()
-            Button("Manage Profiles...") {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            }
+            NavigationLink("Manage Profiles...", value: "settings")
+                .buttonStyle(.plain)
         } label: {
             HStack(spacing: 4) {
                 Text(snippetRepository.activeProfile?.name ?? "Default")
@@ -123,7 +134,9 @@ struct KeyBindingConfigView: View {
                     KeyCell(
                         key: key,
                         binding: snippetRepository.getBinding(for: key),
-                        isSelected: selectedKey == key
+                        isSelected: selectedKey == key,
+                        configurationManager: configurationManager,
+                        snippetRepository: snippetRepository
                     ) {
                         selectedKey = key
                         editBinding(for: key)
@@ -148,16 +161,23 @@ struct KeyBindingConfigView: View {
     // MARK: - Footer
     
     private var footer: some View {
-        HStack {
+        HStack(spacing: 16) {
             accessibilityButton
             
             Spacer()
             
-            Text("\(totalBindings) bindings configured")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Spacer()
+            NavigationLink(value: "settings") {
+                HStack(spacing: 4) {
+                    Image(systemName: "gearshape.fill")
+                    Text("Settings")
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
             
             Button(action: quitApp) {
                 Label("Quit", systemImage: "power")
@@ -186,7 +206,7 @@ struct KeyBindingConfigView: View {
                 Circle()
                     .fill(hasAccessibility ? Color.green : Color.orange)
                     .frame(width: 6, height: 6)
-                Text(hasAccessibility ? "Enabled" : "Enable Access")
+                Text(hasAccessibility ? "Enabled" : "Pending Access")
                     .font(.caption)
             }
             .padding(.horizontal, 8)
@@ -207,9 +227,6 @@ struct KeyBindingConfigView: View {
         }
     }
     
-    private var totalBindings: Int {
-        snippetRepository.activeBindings.count
-    }
     
     // MARK: - Actions
     
@@ -217,9 +234,8 @@ struct KeyBindingConfigView: View {
         if let existing = snippetRepository.getBinding(for: key) {
             editingBinding = existing
         } else {
-            // Create a new binding with an empty snippet
-            let newSnippet = Snippet(title: "", content: "")
-            editingBinding = KeyBinding(key: key, snippet: newSnippet)
+            // Create a new binding with an empty snippet as default
+            editingBinding = KeyBinding(key: key, action: .snippet(Snippet(title: "", content: "")))
         }
         isEditingSnippet = true
     }
@@ -296,6 +312,8 @@ struct KeyCell: View {
     let key: NumpadKey
     let binding: KeyBinding?
     let isSelected: Bool
+    @ObservedObject var configurationManager: ConfigurationManager
+    @ObservedObject var snippetRepository: SnippetRepository
     let onTap: () -> Void
     
     @State private var isHovered = false
@@ -304,7 +322,7 @@ struct KeyCell: View {
         Button(action: onTap) {
             VStack(spacing: 6) {
                 keyBadge
-                snippetLabel
+                actionLabel
             }
             .frame(maxWidth: .infinity)
             .frame(height: 72)
@@ -328,15 +346,21 @@ struct KeyCell: View {
             .cornerRadius(6)
     }
     
-    private var snippetLabel: some View {
+    private var actionLabel: some View {
         Group {
             if let binding = binding {
-                Text(binding.snippet.title.isEmpty ? "Untitled" : binding.snippet.title)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.primary)
+                VStack(spacing: 2) {
+                    actionIcon(for: binding.action)
+                        .font(.caption2)
+                        .foregroundColor(.accentColor)
+                    
+                    Text(actionDisplayName(for: binding.action))
+                        .font(.system(size: 9))
+                        .fontWeight(.medium)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.primary)
+                }
             } else {
                 Text("Empty")
                     .font(.caption2)
@@ -345,6 +369,33 @@ struct KeyCell: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 4)
+    }
+    
+    @ViewBuilder
+    private func actionIcon(for action: KeyBinding.Action) -> some View {
+        switch action {
+        case .snippet:
+            Image(systemName: "doc.text.fill")
+        case .folder:
+            Image(systemName: "folder.fill")
+        case .switchProfile:
+            Image(systemName: "person.fill")
+        case .cycleProfile:
+            Image(systemName: "person.2.fill")
+        }
+    }
+    
+    private func actionDisplayName(for action: KeyBinding.Action) -> String {
+        switch action {
+        case .snippet(let snippet):
+            return snippet.title.isEmpty ? "Untitled" : snippet.title
+        case .folder(let id):
+            return snippetRepository.categories.first(where: { $0.id == id })?.name ?? "Unknown Folder"
+        case .switchProfile(let id):
+            return configurationManager.profiles.first(where: { $0.id == id })?.name ?? "Unknown Profile"
+        case .cycleProfile(let direction):
+            return "Cycle \(direction.rawValue.capitalized)"
+        }
     }
     
     private var hasBinding: Bool {
@@ -366,234 +417,9 @@ struct KeyCell: View {
     }
 }
 
-// MARK: - Snippet Editor Sheet
+// Obsolete SnippetEditorSheet removed - now using KeyBindingEditorSheet.swift
 
-struct SnippetEditorSheet: View {
-    
-    @Binding var binding: KeyBinding?
-    @ObservedObject var snippetRepository: SnippetRepository
-    
-    let onSave: (KeyBinding) -> Void
-    let onDelete: (KeyBinding) -> Void
-    
-    @State private var snippetTitle = ""
-    @State private var snippetContent = ""
-    @State private var showingExistingSnippets = false
-    
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            sheetHeader
-            Divider()
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    keyInfoSection
-                    titleSection
-                    contentSection
-                    existingSnippetsSection
-                }
-                .padding()
-            }
-            
-            Divider()
-            sheetFooter
-        }
-        .frame(width: 400, height: 480)
-        .onAppear {
-            if let binding = binding {
-                snippetTitle = binding.snippet.title
-                snippetContent = binding.snippet.content
-            }
-        }
-    }
-    
-    private var sheetHeader: some View {
-        HStack {
-            Text(isNewBinding ? "Add Binding" : "Edit Binding")
-                .font(.headline)
-            Spacer()
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding()
-    }
-    
-    private var keyInfoSection: some View {
-        HStack(spacing: 12) {
-            if let key = binding?.key {
-                Text(key.symbol)
-                    .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 50, height: 44)
-                    .background(Color.accentColor)
-                    .cornerRadius(10)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Key: \(key.displayName)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("Category: \(key.category.rawValue)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            Spacer()
-        }
-        .padding()
-        .background(Color.secondary.opacity(0.1))
-        .cornerRadius(10)
-    }
-    
-    private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Title")
-                .font(.subheadline)
-                .fontWeight(.medium)
-            TextField("e.g., Reload Packages", text: $snippetTitle)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
-    
-    private var contentSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Content")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Spacer()
-                Text("\(snippetContent.count) characters")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            TextEditor(text: $snippetContent)
-                .font(.system(.body, design: .monospaced))
-                .frame(minHeight: 120)
-                .padding(8)
-                .background(Color(nsColor: .textBackgroundColor))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
-                )
-            
-            Text("This text will be copied to your clipboard when you press the key.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    private var existingSnippetsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button(action: { showingExistingSnippets.toggle() }) {
-                HStack {
-                    Text("Use existing snippet")
-                        .font(.subheadline)
-                    Spacer()
-                    Image(systemName: showingExistingSnippets ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                }
-                .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            
-            if showingExistingSnippets {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(snippetRepository.snippets) { snippet in
-                            ExistingSnippetChip(snippet: snippet) {
-                                snippetTitle = snippet.title
-                                snippetContent = snippet.content
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private var sheetFooter: some View {
-        HStack {
-            if !isNewBinding {
-                Button("Remove Binding", role: .destructive) {
-                    if let binding = binding {
-                        onDelete(binding)
-                    }
-                }
-                .foregroundColor(.red)
-            }
-            
-            Spacer()
-            
-            Button("Cancel") {
-                dismiss()
-            }
-            .keyboardShortcut(.escape)
-            
-            Button("Save") {
-                saveChanges()
-            }
-            .keyboardShortcut(.return)
-            .buttonStyle(.borderedProminent)
-            .disabled(snippetTitle.isEmpty || snippetContent.isEmpty)
-        }
-        .padding()
-    }
-    
-    private var isNewBinding: Bool {
-        guard let binding = binding else { return true }
-        return snippetRepository.getBinding(for: binding.key) == nil
-    }
-    
-    private func saveChanges() {
-        guard var updatedBinding = binding else { return }
-        
-        var updatedSnippet = updatedBinding.snippet
-        updatedSnippet.title = snippetTitle
-        updatedSnippet.content = snippetContent
-        updatedSnippet.updatedAt = Date()
-        
-        updatedBinding.snippet = updatedSnippet
-        updatedBinding.updatedAt = Date()
-        
-        onSave(updatedBinding)
-    }
-}
-
-// MARK: - Existing Snippet Chip
-
-struct ExistingSnippetChip: View {
-    let snippet: Snippet
-    let onSelect: () -> Void
-    
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(snippet.title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Text(snippet.preview)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(isHovered ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
-            .cornerRadius(8)
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-    }
-}
+// MARK: - Snippet Editor Sheet Styles and Constants
 
 #Preview {
     KeyBindingConfigView(

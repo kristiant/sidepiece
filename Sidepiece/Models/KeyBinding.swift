@@ -1,13 +1,38 @@
 import Foundation
 
-/// Represents a mapping between a numpad key and a snippet
+/// Represents a mapping between a numpad key and an action
 struct KeyBinding: Identifiable, Codable, Equatable {
+    
+    enum Action: Codable, Equatable {
+        case snippet(Snippet)
+        case folder(UUID)
+        case switchProfile(UUID)
+        case cycleProfile(direction: CycleDirection)
+        
+        var displayName: String {
+            switch self {
+            case .snippet(let snippet):
+                return snippet.title
+            case .folder:
+                return "Folder"
+            case .switchProfile:
+                return "Switch Profile"
+            case .cycleProfile(let direction):
+                return "Cycle Profiles (\(direction.rawValue.capitalized))"
+            }
+        }
+    }
+
+    enum CycleDirection: String, Codable {
+        case next
+        case previous
+    }
     
     // MARK: - Properties
     
     let id: UUID
     var key: NumpadKey
-    var snippet: Snippet
+    var action: Action
     var isEnabled: Bool
     var createdAt: Date
     var updatedAt: Date
@@ -17,34 +42,58 @@ struct KeyBinding: Identifiable, Codable, Equatable {
     init(
         id: UUID = UUID(),
         key: NumpadKey,
-        snippet: Snippet,
+        action: Action,
         isEnabled: Bool = true,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
         self.id = id
         self.key = key
-        self.snippet = snippet
+        self.action = action
         self.isEnabled = isEnabled
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
     
-    // MARK: - Mutations
+    // MARK: - Backward Compatibility
     
-    /// Returns a copy with the enabled state toggled
-    func toggled() -> KeyBinding {
-        var copy = self
-        copy.isEnabled = !isEnabled
-        copy.updatedAt = Date()
-        return copy
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.key = try container.decode(NumpadKey.self, forKey: .key)
+        self.isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        
+        // Handle migration from snippet to action
+        if let action = try? container.decode(Action.self, forKey: .action) {
+            self.action = action
+        } else if let snippet = try? container.decode(Snippet.self, forKey: .snippet) {
+            self.action = .snippet(snippet)
+        } else {
+            // Default to empty if somehow both missing (should not happen normally)
+            throw DecodingError.dataCorruptedError(forKey: .action, in: container, debugDescription: "Missing action or snippet data")
+        }
     }
     
-    /// Returns a copy with an updated snippet
-    func withSnippet(_ snippet: Snippet) -> KeyBinding {
-        var copy = self
-        copy.snippet = snippet
-        copy.updatedAt = Date()
-        return copy
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(key, forKey: .key)
+        try container.encode(action, forKey: .action)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, key, action, snippet, isEnabled, createdAt, updatedAt
+    }
+}
+
+// MARK: - Helper for legacy constructors
+extension KeyBinding {
+    init(key: NumpadKey, snippet: Snippet) {
+        self.init(key: key, action: .snippet(snippet))
     }
 }

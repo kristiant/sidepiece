@@ -95,6 +95,22 @@ final class ConfigurationManager: ObservableObject {
         saveProfiles()
     }
     
+    func cycleProfiles(direction: KeyBinding.CycleDirection) {
+        guard !profiles.isEmpty else { return }
+        
+        let currentIndex = profiles.firstIndex(where: { $0.id == configuration.activeProfileId }) ?? 0
+        var nextIndex: Int
+        
+        switch direction {
+        case .next:
+            nextIndex = (currentIndex + 1) % profiles.count
+        case .previous:
+            nextIndex = (currentIndex - 1 + profiles.count) % profiles.count
+        }
+        
+        setActiveProfile(profiles[nextIndex])
+    }
+    
     func addProfile(_ profile: Profile) {
         profiles.append(profile)
         saveProfiles()

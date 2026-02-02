@@ -7,6 +7,7 @@ struct SnippetCategory: Identifiable, Codable, Equatable {
     
     let id: UUID
     var name: String
+    var parentId: UUID?
     var color: String  // Hex color code
     var icon: String   // SF Symbol name
     var createdAt: Date
@@ -17,6 +18,7 @@ struct SnippetCategory: Identifiable, Codable, Equatable {
     init(
         id: UUID = UUID(),
         name: String,
+        parentId: UUID? = nil,
         color: String = "#007AFF",
         icon: String = "folder",
         createdAt: Date = Date(),
@@ -24,6 +26,7 @@ struct SnippetCategory: Identifiable, Codable, Equatable {
     ) {
         self.id = id
         self.name = name
+        self.parentId = parentId
         self.color = color
         self.icon = icon
         self.createdAt = createdAt

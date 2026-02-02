@@ -13,6 +13,9 @@ struct AppConfiguration: Codable, Equatable {
     var requireModifierKey: Bool
     var modifierKey: ModifierKeyOption
     var theme: AppTheme
+    var autoPaste: Bool
+    var autoEnterAfterPaste: Bool
+    var autoExitFolderMode: Bool
     
     // MARK: - Initialisation
     
@@ -24,7 +27,10 @@ struct AppConfiguration: Codable, Equatable {
         activeProfileId: UUID? = nil,
         requireModifierKey: Bool = false,
         modifierKey: ModifierKeyOption = .fn,
-        theme: AppTheme = .system
+        theme: AppTheme = .system,
+        autoPaste: Bool = true,
+        autoEnterAfterPaste: Bool = false,
+        autoExitFolderMode: Bool = true
     ) {
         self.launchAtLogin = launchAtLogin
         self.showMenuBarIcon = showMenuBarIcon
@@ -34,6 +40,24 @@ struct AppConfiguration: Codable, Equatable {
         self.requireModifierKey = requireModifierKey
         self.modifierKey = modifierKey
         self.theme = theme
+        self.autoPaste = autoPaste
+        self.autoEnterAfterPaste = autoEnterAfterPaste
+        self.autoExitFolderMode = autoExitFolderMode
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+        self.showMenuBarIcon = try container.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? true
+        self.playSoundOnCopy = try container.decodeIfPresent(Bool.self, forKey: .playSoundOnCopy) ?? true
+        self.showNotificationOnCopy = try container.decodeIfPresent(Bool.self, forKey: .showNotificationOnCopy) ?? false
+        self.activeProfileId = try container.decodeIfPresent(UUID.self, forKey: .activeProfileId)
+        self.requireModifierKey = try container.decodeIfPresent(Bool.self, forKey: .requireModifierKey) ?? false
+        self.modifierKey = try container.decodeIfPresent(ModifierKeyOption.self, forKey: .modifierKey) ?? .fn
+        self.theme = try container.decodeIfPresent(AppTheme.self, forKey: .theme) ?? .system
+        self.autoPaste = try container.decodeIfPresent(Bool.self, forKey: .autoPaste) ?? true
+        self.autoEnterAfterPaste = try container.decodeIfPresent(Bool.self, forKey: .autoEnterAfterPaste) ?? false
+        self.autoExitFolderMode = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderMode) ?? true
     }
     
     // MARK: - Default

@@ -6,7 +6,8 @@ struct SidepieceApp: App {
     
     var body: some Scene {
         Settings {
-            SettingsView()
+            // Hide the system settings since we have in-app settings
+            EmptyView()
         }
     }
 }

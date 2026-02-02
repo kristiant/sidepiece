@@ -35,6 +35,13 @@ final class SnippetRepository: ObservableObject {
         configurationManager.updateProfile(profile)
     }
     
+    func clearAllBindings() {
+        guard var profile = activeProfile else { return }
+        profile.bindings = []
+        profile.updatedAt = Date()
+        configurationManager.updateProfile(profile)
+    }
+    
     func recordUsage(for snippet: Snippet) {
         guard var updated = snippets.first(where: { $0.id == snippet.id }) else { return }
         updated.usageCount += 1
@@ -50,6 +57,36 @@ final class SnippetRepository: ObservableObject {
         snippets[i] = snippet; saveSnippets()
     }
     func deleteSnippet(_ snippet: Snippet) { snippets.removeAll { $0.id == snippet.id }; saveSnippets() }
+    
+    func getSnippets(in categoryId: UUID) -> [Snippet] {
+        snippets.filter { $0.categoryId == categoryId }
+    }
+    
+    func getCategory(id: UUID) -> SnippetCategory? {
+        categories.first { $0.id == id }
+    }
+    
+    func getSubCategories(parentId: UUID) -> [SnippetCategory] {
+        categories.filter { $0.parentId == parentId }
+    }
+    
+    // MARK: - Category CRUD
+    
+    func addCategory(_ category: SnippetCategory) { categories.append(category); saveCategories() }
+    func updateCategory(_ category: SnippetCategory) {
+        guard let i = categories.firstIndex(where: { $0.id == category.id }) else { return }
+        categories[i] = category; saveCategories()
+    }
+    func deleteCategory(_ categoryId: UUID) {
+        // Remove snippets in this category? 
+        // For now just nullify their categoryId
+        for i in snippets.indices where snippets[i].categoryId == categoryId {
+            snippets[i].categoryId = nil
+        }
+        categories.removeAll { $0.id == categoryId }
+        saveSnippets()
+        saveCategories()
+    }
     
     // MARK: - Persistence
     

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A text snippet that can be copied to the clipboard
-struct Snippet: Identifiable, Codable, Equatable {
+struct Snippet: Identifiable, Codable, Equatable, Hashable {
     
     // MARK: - Properties
     

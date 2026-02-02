@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarPopoverView: View {
     
     @ObservedObject var snippetRepository: SnippetRepository
+    @ObservedObject var configurationManager: ConfigurationManager
     let onSnippetSelected: (Snippet) -> Void
     
     @State private var searchText = ""
@@ -49,7 +50,7 @@ struct MenuBarPopoverView: View {
             LazyVStack(spacing: 4) {
                 ForEach(filteredBindings) { binding in
                     SnippetRow(binding: binding) {
-                        onSnippetSelected(binding.snippet)
+                        handleBindingSelected(binding)
                     }
                 }
                 
@@ -68,9 +69,35 @@ struct MenuBarPopoverView: View {
         guard !searchText.isEmpty else { return bindings }
         
         let query = searchText.lowercased()
-        return bindings.filter {
-            $0.snippet.title.lowercased().contains(query) ||
-            $0.snippet.content.lowercased().contains(query)
+        return bindings.filter { binding in
+            switch binding.action {
+            case .snippet(let snippet):
+                return snippet.title.lowercased().contains(query) ||
+                       snippet.content.lowercased().contains(query)
+            case .folder:
+                return "folder".contains(query)
+            case .switchProfile:
+                return "switch profile".contains(query)
+            case .cycleProfile:
+                return "cycle profiles".contains(query)
+            }
+        }
+    }
+    
+    private func handleBindingSelected(_ binding: KeyBinding) {
+        switch binding.action {
+        case .snippet(let snippet):
+            onSnippetSelected(snippet)
+        case .folder(let id):
+            // Folders are handled primarily via Numpad keys, 
+            // but we could show a message or do nothing here.
+            print("Folder selected in menu bar: \(id)")
+        case .switchProfile(let id):
+            if let profile = configurationManager.profiles.first(where: { $0.id == id }) {
+                configurationManager.setActiveProfile(profile)
+            }
+        case .cycleProfile(let direction):
+            configurationManager.cycleProfiles(direction: direction)
         }
     }
     
@@ -137,10 +164,10 @@ struct SnippetRow: View {
                     .cornerRadius(6)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(binding.snippet.title)
+                    Text(title(for: binding.action))
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    Text(binding.snippet.preview)
+                    Text(subtitle(for: binding.action))
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -155,5 +182,31 @@ struct SnippetRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+    }
+    
+    private func title(for action: KeyBinding.Action) -> String {
+        switch action {
+        case .snippet(let snippet):
+            return snippet.title
+        case .folder:
+            return "Folder"
+        case .switchProfile:
+            return "Switch Profile"
+        case .cycleProfile(let direction):
+            return "Cycle Profiles (\(direction.rawValue.capitalized))"
+        }
+    }
+    
+    private func subtitle(for action: KeyBinding.Action) -> String {
+        switch action {
+        case .snippet(let snippet):
+            return snippet.preview
+        case .folder:
+            return "Select to open navigation folder"
+        case .switchProfile:
+            return "Change to this profile"
+        case .cycleProfile:
+            return "Switch to next/prev"
+        }
     }
 }
