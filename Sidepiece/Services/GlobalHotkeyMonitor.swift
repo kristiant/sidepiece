@@ -19,7 +19,7 @@ final class GlobalHotkeyMonitor {
     
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var isRunning = false
+    private(set) var isRunning = false
     
     // MARK: - Public Methods
     

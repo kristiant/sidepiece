@@ -15,14 +15,20 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     PRODUCT_NAME: Sidepiece
+    CONFIGURATION_BUILD_DIR: $(SRCROOT)/build/$(CONFIGURATION)
 
 configs:
   Debug:
     DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     SWIFT_OPTIMIZATION_LEVEL: -Onone
+    ENABLE_HARDENED_RUNTIME: NO
+    CODE_SIGNING_ALLOWED: YES
+    # Set this to your local dev team if possible, or keep as is for 'Sign to Run Locally'
+    CODE_SIGN_IDENTITY: "Apple Development"
   Release:
     DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     SWIFT_OPTIMIZATION_LEVEL: -O
+    ENABLE_HARDENED_RUNTIME: YES
 
 targets:
   Sidepiece:
