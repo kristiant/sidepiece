@@ -138,6 +138,13 @@ final class ConfigurationManager: ObservableObject {
         saveProfiles()
     }
     
+    func clearAllBindings() {
+        guard var profile = activeProfile else { return }
+        profile.bindings = []
+        profile.updatedAt = Date()
+        updateProfile(profile)
+    }
+    
     private func loadProfiles() {
         // Ensure profiles directory exists
         try? fileManager.createDirectory(at: profilesDirectoryURL, withIntermediateDirectories: true)
