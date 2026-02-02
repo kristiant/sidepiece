@@ -378,7 +378,16 @@ struct GeneralSettingsView: View {
                         }
                     ))
                     
-                    Text("Automatically return to the top-level (root) macros after 5 seconds of inactivity in a folder.")
+                    Toggle("Auto-peek folder contents", isOn: Binding(
+                        get: { configurationManager.configuration.autoPeakFolderContents },
+                        set: { newValue in
+                            var config = configurationManager.configuration
+                            config.autoPeakFolderContents = newValue
+                            configurationManager.updateConfiguration(config)
+                        }
+                    ))
+                    
+                    Text("Automatically return to root after 5s of inactivity, or peek contents when entering.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

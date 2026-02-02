@@ -183,10 +183,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Hotkey Handling
     
     private func handleNumpadKeyPress(_ key: NumpadKey) {
-        // If we are in a folder, handle folder navigation/snippet selection
-        if let folderId = currentFolderId {
-            handleFolderKeyPress(key, folderId: folderId)
-            return
+        let navKeys: [NumpadKey] = [.num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9, .num0, .clear]
+        
+        if let folderId = currentFolderId, navKeys.contains(key) {
+            if let binding = snippetRepository.getBinding(for: key), 
+               case .appFunction = binding.action {
+                // App function takes precedence
+            } else {
+                handleFolderKeyPress(key, folderId: folderId)
+                return
+            }
         }
         
         guard let binding = snippetRepository.getBinding(for: key), binding.isEnabled else {
@@ -220,26 +226,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    private func peakSnippets() {
-        let keys: [NumpadKey] = [.num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9, .num0, .clear]
-        let items = currentFolderId.map { snippetRepository.getSubCategories(parentId: $0) + (snippetRepository.getSnippets(in: $0) as [Any]) } ?? []
+    private func peakSnippets(toggle: Bool = true) {
+        if toggle && hudViewModel.isPeaking {
+            hudViewModel.dismissPeak()
+            return
+        }
 
-        let assignments = keys.compactMap { key -> (String, String)? in
-            if let _ = currentFolderId {
+        let keys: [NumpadKey] = [.num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9, .num0, .clear]
+        let assignments: [(String, String)]
+        
+        if let folderId = currentFolderId {
+            let subCategories = snippetRepository.getSubCategories(parentId: folderId)
+            let folderSnippets = snippetRepository.getSnippets(in: folderId)
+            let items: [Any] = subCategories + folderSnippets
+            
+            assignments = keys.compactMap { key in
                 if key == .num0 || key == .clear { return (key.symbol, "BACK") }
                 let idx = getIndex(for: key)
                 guard idx >= 0 && idx < items.count else { return nil }
-                let lbl = (items[idx] as? SnippetCategory)?.name ?? (items[idx] as? Snippet)?.title ?? ""
-                return lbl.isEmpty ? nil : (key.symbol, lbl)
+                let item = items[idx]
+                let label = (item as? SnippetCategory)?.name ?? (item as? Snippet)?.title ?? ""
+                return label.isEmpty ? nil : (key.symbol, label.uppercased())
             }
-            guard let action = snippetRepository.getBinding(for: key)?.action else { return nil }
-            return (key.symbol, {
+        } else {
+            assignments = keys.compactMap { key in
+                guard let action = snippetRepository.getBinding(for: key)?.action else { return nil }
+                let label: String
                 switch action {
-                case .folder(let id): return snippetRepository.getCategory(id: id)?.name ?? "FOLDER"
-                default: return action.displayName
+                case .folder(let id): label = snippetRepository.getCategory(id: id)?.name ?? "FOLDER"
+                default: label = action.displayName
                 }
-            }())
+                return (key.symbol, label.uppercased())
+            }
         }
+        
         hudViewModel.peak(assignments: assignments)
     }
     
@@ -257,6 +277,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 showActionFeedback(title: "Empty Folder: \(category.name)", icon: "folder.badge.minus")
             } else {
                 showActionFeedback(title: "Folder: \(category.name)", icon: "folder.fill")
+            }
+            
+            if configurationManager.configuration.autoPeakFolderContents || hudViewModel.isPeaking {
+                peakSnippets(toggle: false)
             }
         }
     }
@@ -279,6 +303,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         folderModeTimer = nil
         currentFolderId = nil
         hudViewModel.updateFolder(name: nil)
+        
+        if configurationManager.configuration.autoPeakFolderContents || hudViewModel.isPeaking {
+            peakSnippets(toggle: false)
+        }
         
         if withFeedback {
             showActionFeedback(title: "Auto-Exit: Back to Root", icon: "timer")

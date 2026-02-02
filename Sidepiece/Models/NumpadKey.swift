@@ -104,7 +104,7 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .num0, .num1, .num2, .num3, .num4,
              .num5, .num6, .num7, .num8, .num9:
             return displayName
-        case .clear: return "⌧"
+        case .clear: return "CLR"
         case .equals: return "="
         case .divide: return "÷"
         case .multiply: return "×"

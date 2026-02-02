@@ -51,23 +51,35 @@ struct FloatingHUDView: View {
     }
     
     private var peakView: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 85))], spacing: 4) {
-            ForEach(viewModel.peakingAssignments, id: \.key) { item in
-                HStack(spacing: 4) {
-                    Text(item.key)
-                        .font(.system(size: 7, weight: .bold, design: .monospaced))
-                        .frame(width: 14, height: 14)
-                        .background(Color.accentColor.opacity(0.25))
-                        .cornerRadius(2)
-                    
-                    Text(item.label.uppercased())
-                        .font(.system(size: 7, weight: .bold, design: .monospaced))
-                        .foregroundColor(.primary.opacity(0.8))
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 10) {
+            if let folder = viewModel.activeFolderName {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.fill")
+                    Text(folder.uppercased())
                 }
-                .padding(3)
-                .background(Color.white.opacity(0.02))
-                .cornerRadius(4)
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(.accentColor.opacity(0.8))
+                .padding(.bottom, 4)
+            }
+            
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 85))], spacing: 4) {
+                ForEach(viewModel.peakingAssignments, id: \.key) { item in
+                    HStack(spacing: 4) {
+                        Text(item.key)
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .frame(width: 14, height: 14)
+                            .background(Color.accentColor.opacity(0.25))
+                            .cornerRadius(2)
+                        
+                        Text(item.label.uppercased())
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .foregroundColor(.primary.opacity(0.8))
+                            .lineLimit(1)
+                    }
+                    .padding(3)
+                    .background(Color.white.opacity(0.02))
+                    .cornerRadius(4)
+                }
             }
         }
         .padding(8)

@@ -5,7 +5,7 @@ class HUDWindowController: NSWindowController {
     
     init(viewModel: HUDViewModel) {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 60),
+            contentRect: NSRect(x: 0, y: 0, width: 300, height: 600),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -13,7 +13,7 @@ class HUDWindowController: NSWindowController {
         
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.level = .mainMenu // Very high but safe
+        panel.level = .mainMenu
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -24,27 +24,21 @@ class HUDWindowController: NSWindowController {
         panel.contentView = contentView
         
         super.init(window: panel)
-        
         updatePosition()
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+    required init?(coder: NSCoder) { fatalError() }
     
     func updatePosition() {
         guard let screen = NSScreen.main else { return }
-        
-        // Position at bottom right
         let screenRect = screen.visibleFrame
-        let windowWidth: CGFloat = 400
-        let windowHeight: CGFloat = 60
-        let padding: CGFloat = 20
+        let padding: CGFloat = 24
         
-        let x = screenRect.maxX - windowWidth - padding
+        // Window is 300x600, positioned at bottom right
+        let x = screenRect.maxX - 300 - padding
         let y = screenRect.minY + padding
         
-        window?.setFrame(NSRect(x: x, y: y, width: windowWidth, height: windowHeight), display: true)
+        window?.setFrame(NSRect(x: x, y: y, width: 300, height: 600), display: true)
     }
     
     func show() {

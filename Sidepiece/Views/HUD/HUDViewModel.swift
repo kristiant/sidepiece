@@ -23,6 +23,12 @@ class HUDViewModel: ObservableObject {
         }
     }
     
+    func dismissPeak() {
+        peakTimer?.invalidate()
+        peakTimer = nil
+        withAnimation(.spring()) { isPeaking = false }
+    }
+    
     func showFeedback(message: String, icon: String) {
         feedbackMessage = message
         feedbackIcon = icon
