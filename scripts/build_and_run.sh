@@ -6,7 +6,7 @@
 set -e
 
 APP_NAME="Sidepiece"
-BUNDLE_ID="com.sidepiece.Sidepiece"
+BUNDLE_ID="com.sidepiece.app"
 STABLE_BUILD_DIR="$(pwd)/build/Debug"
 APP_PATH="$STABLE_BUILD_DIR/$APP_NAME.app"
 
@@ -17,48 +17,43 @@ if command -v xcodegen >/dev/null 2>&1; then
     echo "📦 Generating project with XcodeGen..."
     xcodegen generate
 else
-    echo "⚠️  XcodeGen not found. Skipping generation (assuming .xcodeproj exists)..."
+    echo "⚠️  XcodeGen not found. Skipping generation..."
 fi
 
 # 2. Build to Stable Path
-# Using a fixed path helps macOS keep track of Accessibility permissions.
 echo "🛠 Building Sidepiece..."
 mkdir -p "$STABLE_BUILD_DIR"
 
+# Note: We build directly with xcodebuild. Removing xcbeautify for reliability.
 xcodebuild -project "$APP_NAME.xcodeproj" \
            -scheme "$APP_NAME" \
            -configuration Debug \
            -derivedDataPath ./DerivedData \
            CONFIGURATION_BUILD_DIR="$STABLE_BUILD_DIR" \
-           clean build | xcbeautify || (echo "❌ Build failed. Check logs." && exit 1)
+           clean build
 
 # 3. Handle Running Instances
 echo "Stopping any existing instances..."
 killall "$APP_NAME" 2>/dev/null || true
 
-# 4. Reset Permissions (Fixes the "Ghost Permission" bug)
-# If the app binary changes, macOS sometimes shows it as enabled when it's not.
+# 4. Handle Permissions (Fixes the "Ghost Permission" bug)
+# Note: Automatic grant requires Full Disk Access and is usually blocked by SIP.
 # Resetting ensures a fresh, working prompt/toggle.
 echo "🧹 Resetting Accessibility permissions for $BUNDLE_ID..."
 tccutil reset Accessibility "$BUNDLE_ID" 2>/dev/null || true
-tccutil reset Accessibility "Sidepiece" 2>/dev/null || true
 
-# 5. Launch
+# 6. Launch
 echo "🎈 Launching $APP_NAME..."
-# Using 'open' ensures it starts in the background like a normal app
 open "$APP_PATH"
 
-# 6. Assist User
+# 7. Assist User
 echo "----------------------------------------------------------------"
 echo "✅ BUILD COMPLETE"
 echo "----------------------------------------------------------------"
-echo "Sidepiece is now running from: $APP_PATH"
-echo ""
-echo "CRITICAL: You must enable Accessibility for Sidepiece now."
-echo "1. The Privacy settings should open automatically."
-echo "2. Find 'Sidepiece' in the list and toggle it ON."
-echo "3. If it's already there but OFF, toggle it ON."
+echo "Sidepiece is now running."
+echo "If the HUD doesn't respond to keys, please ensure it's enabled in:"
+echo "System Settings > Privacy & Security > Accessibility"
 echo "----------------------------------------------------------------"
 
-# Open the settings page
+# Open settings just in case
 open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
