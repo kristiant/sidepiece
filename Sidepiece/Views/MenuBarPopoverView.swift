@@ -7,80 +7,152 @@ struct MenuBarPopoverView: View {
     @ObservedObject var configurationManager: ConfigurationManager
     let onSnippetSelected: (Snippet) -> Void
     
-    @State private var searchText = ""
+    @State private var selectedCategory: NumpadKey.Category = .numbers
+    @State private var showingSettings = false
     
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            snippetList
+            
+            HStack(spacing: 0) {
+                // Left: Hotkeys
+                VStack(spacing: 0) {
+                    categoryPicker
+                    Divider()
+                    keyGrid
+                }
+                .frame(width: 350)
+                
+                Divider()
+                
+                // Folders & Snippets (LibraryView now handles both horizontally)
+                LibraryView(
+                    snippetRepository: snippetRepository,
+                    configurationManager: configurationManager
+                )
+                .frame(maxWidth: .infinity)
+            }
+            
             Divider()
             footer
         }
-        .frame(width: 320, height: 400)
+        .frame(width: 1000, height: 600)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(
+                configurationManager: configurationManager,
+                snippetRepository: snippetRepository
+            )
+        }
     }
     
     private var header: some View {
-        VStack(spacing: 8) {
+        HStack {
             HStack {
-                Image(systemName: "keyboard")
-                    .font(.title2)
-                Text("Sidepiece")
-                    .font(.headline)
-                Spacer()
-                if let profile = snippetRepository.activeProfile {
-                    Text(profile.name)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.secondary.opacity(0.2))
-                        .cornerRadius(4)
-                }
-            }
-            
-            TextField("Search snippets...", text: $searchText)
-                .textFieldStyle(.roundedBorder)
-        }
-        .padding()
-    }
-    
-    private var snippetList: some View {
-        ScrollView {
-            LazyVStack(spacing: 4) {
-                ForEach(filteredBindings) { binding in
-                    SnippetRow(binding: binding) {
-                        handleBindingSelected(binding)
-                    }
+                HStack {
+                    Image(systemName: "keyboard")
+                        .foregroundColor(.accentColor)
+                    Text("Hot Keys")
+                        .font(.headline)
                 }
                 
-                if filteredBindings.isEmpty {
-                    emptyState
+                Spacer()
+                
+                Button(action: {
+                    let alert = NSAlert()
+                    alert.messageText = "Clear all hotkeys?"
+                    alert.informativeText = "This will remove all snippet assignments from the current profile. This cannot be undone."
+                    alert.addButton(withTitle: "Clear All")
+                    alert.addButton(withTitle: "Cancel")
+                    alert.alertStyle = .warning
+                    
+                    if alert.runModal() == .alertFirstButtonReturn {
+                        configurationManager.clearAllBindings()
+                    }
+                }) {
+                    Text("Clear All")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.red.opacity(0.8))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(4)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .frame(width: 330, alignment: .leading)
+            .padding(.trailing, 20)
+            
+            Spacer()
+            
+            HStack {
+                Image(systemName: "folder.fill")
+                    .foregroundColor(.accentColor)
+                Text("Folders")
+                    .font(.headline)
+            }
+            .frame(width: 250, alignment: .leading)
+            
+            Spacer()
+            
+            HStack {
+                Image(systemName: "doc.text.fill")
+                    .foregroundColor(.accentColor)
+                Text("Snippets")
+                    .font(.headline)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding()
+        .background(Color(nsColor: .windowBackgroundColor))
     }
     
-    private var filteredBindings: [KeyBinding] {
-        let bindings = snippetRepository.activeBindings.filter(\.isEnabled)
-        
-        guard !searchText.isEmpty else { return bindings }
-        
-        let query = searchText.lowercased()
-        return bindings.filter { binding in
-            switch binding.action {
-            case .snippet(let snippet):
-                return snippet.title.lowercased().contains(query) ||
-                       snippet.content.lowercased().contains(query)
-            case .folder:
-                return "folder".contains(query)
-            case .switchProfile:
-                return "switch profile".contains(query)
-            case .cycleProfile:
-                return "cycle profiles".contains(query)
+    private var categoryPicker: some View {
+        HStack(spacing: 4) {
+            ForEach(NumpadKey.Category.allCases, id: \.self) { category in
+                CategoryTab(
+                    category: category,
+                    isSelected: selectedCategory == category,
+                    bindingCount: bindingCount(for: category)
+                ) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedCategory = category
+                    }
+                }
             }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+    
+    private func bindingCount(for category: NumpadKey.Category) -> Int {
+        NumpadKey.keys(in: category).filter { key in
+            snippetRepository.getBinding(for: key) != nil
+        }.count
+    }
+    
+    private var keyGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                ForEach(NumpadKey.keys(in: selectedCategory)) { key in
+                    KeyCell(
+                        key: key,
+                        binding: snippetRepository.getBinding(for: key),
+                        isSelected: false,
+                        configurationManager: configurationManager,
+                        snippetRepository: snippetRepository
+                    ) {
+                        // In the popover, clicking a key triggers it
+                        if let binding = snippetRepository.getBinding(for: key) {
+                            handleBindingSelected(binding)
+                        } else {
+                            // If empty, maybe open editor?
+                            // For now just show help
+                        }
+                    }
+                }
+            }
+            .padding()
         }
     }
     
@@ -89,9 +161,9 @@ struct MenuBarPopoverView: View {
         case .snippet(let snippet):
             onSnippetSelected(snippet)
         case .folder(let id):
-            // Folders are handled primarily via Numpad keys, 
-            // but we could show a message or do nothing here.
-            print("Folder selected in menu bar: \(id)")
+            // Folders could navigate the library? 
+            // For now just logs
+            print("Folder selected: \(id)")
         case .switchProfile(let id):
             if let profile = configurationManager.profiles.first(where: { $0.id == id }) {
                 configurationManager.setActiveProfile(profile)
@@ -101,26 +173,10 @@ struct MenuBarPopoverView: View {
         }
     }
     
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "tray")
-                .font(.largeTitle)
-                .foregroundColor(.secondary)
-            Text("No snippets configured")
-                .font(.headline)
-                .foregroundColor(.secondary)
-            Text("Open Preferences to add snippets")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-    }
-    
     private var footer: some View {
         HStack {
-            Button(action: openPreferences) {
-                Label("Preferences", systemImage: "gear")
+            Button(action: { showingSettings = true }) {
+                Label("Settings", systemImage: "gear")
             }
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
@@ -137,76 +193,9 @@ struct MenuBarPopoverView: View {
         .padding()
     }
     
-    private func openPreferences() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-    
     private func quitApp() {
         NSApp.terminate(nil)
     }
 }
 
-struct SnippetRow: View {
-    let binding: KeyBinding
-    let onTap: () -> Void
-    
-    @State private var isHovered = false
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Text(binding.key.symbol)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.white)
-                    .frame(width: 28, height: 28)
-                    .background(Color.accentColor)
-                    .cornerRadius(6)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title(for: binding.action))
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text(subtitle(for: binding.action))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-                
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(isHovered ? Color.accentColor.opacity(0.1) : Color.clear)
-            .cornerRadius(6)
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-    }
-    
-    private func title(for action: KeyBinding.Action) -> String {
-        switch action {
-        case .snippet(let snippet):
-            return snippet.title
-        case .folder:
-            return "Folder"
-        case .switchProfile:
-            return "Switch Profile"
-        case .cycleProfile(let direction):
-            return "Cycle Profiles (\(direction.rawValue.capitalized))"
-        }
-    }
-    
-    private func subtitle(for action: KeyBinding.Action) -> String {
-        switch action {
-        case .snippet(let snippet):
-            return snippet.preview
-        case .folder:
-            return "Select to open navigation folder"
-        case .switchProfile:
-            return "Change to this profile"
-        case .cycleProfile:
-            return "Switch to next/prev"
-        }
-    }
-}
+

@@ -71,13 +71,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func setupPopover() {
         popover = NSPopover()
-        popover?.contentSize = NSSize(width: 380, height: 520)
+        popover?.contentSize = NSSize(width: 1000, height: 600)
         popover?.behavior = .transient
         popover?.animates = true
         popover?.contentViewController = NSHostingController(
-            rootView: KeyBindingConfigView(
+            rootView: MenuBarPopoverView(
                 snippetRepository: snippetRepository,
-                configurationManager: configurationManager
+                configurationManager: configurationManager,
+                onSnippetSelected: { [weak self] snippet in
+                    self?.executeSnippetAction(snippet)
+                    self?.closePopover()
+                }
             )
         )
     }

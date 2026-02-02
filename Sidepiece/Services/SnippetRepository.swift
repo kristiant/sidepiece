@@ -61,6 +61,9 @@ final class SnippetRepository: ObservableObject {
     func getSnippets(in categoryId: UUID) -> [Snippet] {
         snippets.filter { $0.categoryId == categoryId }
     }
+    func getSnippet(id: UUID) -> Snippet? {
+        snippets.first { $0.id == id }
+    }
     
     func getCategory(id: UUID) -> SnippetCategory? {
         categories.first { $0.id == id }
@@ -83,9 +86,45 @@ final class SnippetRepository: ObservableObject {
         for i in snippets.indices where snippets[i].categoryId == categoryId {
             snippets[i].categoryId = nil
         }
+        // Also handle subcategories (move to parent's parent or root)
+        let category = getCategory(id: categoryId)
+        for i in categories.indices where categories[i].parentId == categoryId {
+            categories[i].parentId = category?.parentId
+        }
+        
         categories.removeAll { $0.id == categoryId }
         saveSnippets()
         saveCategories()
+    }
+    
+    // MARK: - Movement
+    
+    func moveSnippet(_ snippetId: UUID, toCategoryId: UUID?) {
+        guard let index = snippets.firstIndex(where: { $0.id == snippetId }) else { return }
+        snippets[index].categoryId = toCategoryId
+        saveSnippets()
+    }
+    
+    func moveCategory(_ categoryId: UUID, toParentId: UUID?) {
+        // Prevent moving a category into itself or its own descendants
+        if let toId = toParentId, isDescendant(of: categoryId, target: toId) {
+            return
+        }
+        
+        guard let index = categories.firstIndex(where: { $0.id == categoryId }) else { return }
+        categories[index].parentId = toParentId
+        saveCategories()
+    }
+    
+    private func isDescendant(of categoryId: UUID, target: UUID) -> Bool {
+        if categoryId == target { return true }
+        let subCategories = getSubCategories(parentId: categoryId)
+        for sub in subCategories {
+            if isDescendant(of: sub.id, target: target) {
+                return true
+            }
+        }
+        return false
     }
     
     // MARK: - Persistence
