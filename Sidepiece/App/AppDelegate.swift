@@ -81,6 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onSnippetSelected: { [weak self] snippet in
                     self?.executeSnippetAction(snippet)
                     self?.closePopover()
+                },
+                onAppFunctionSelected: { [weak self] function in
+                    self?.handleAppFunction(function)
+                    self?.closePopover()
                 }
             )
         )
@@ -204,7 +208,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let active = configurationManager.activeProfile {
                 showActionFeedback(title: "Profile: \(active.name)", icon: "person.2.fill")
             }
+        case .appFunction(let function):
+            handleAppFunction(function)
         }
+    }
+    
+    private func handleAppFunction(_ function: KeyBinding.AppFunction) {
+        switch function {
+        case .peakSnippets:
+            peakSnippets()
+        }
+    }
+    
+    private func peakSnippets() {
+        let keys: [NumpadKey] = [.num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9, .num0, .clear]
+        let items = currentFolderId.map { snippetRepository.getSubCategories(parentId: $0) + (snippetRepository.getSnippets(in: $0) as [Any]) } ?? []
+
+        let assignments = keys.compactMap { key -> (String, String)? in
+            if let _ = currentFolderId {
+                if key == .num0 || key == .clear { return (key.symbol, "BACK") }
+                let idx = getIndex(for: key)
+                guard idx >= 0 && idx < items.count else { return nil }
+                let lbl = (items[idx] as? SnippetCategory)?.name ?? (items[idx] as? Snippet)?.title ?? ""
+                return lbl.isEmpty ? nil : (key.symbol, lbl)
+            }
+            guard let action = snippetRepository.getBinding(for: key)?.action else { return nil }
+            return (key.symbol, {
+                switch action {
+                case .folder(let id): return snippetRepository.getCategory(id: id)?.name ?? "FOLDER"
+                default: return action.displayName
+                }
+            }())
+        }
+        hudViewModel.peak(assignments: assignments)
     }
     
     private func enterFolder(_ folderId: UUID) {
@@ -373,6 +409,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notification.informativeText = body
         notification.soundName = nil
         NSUserNotificationCenter.default.deliver(notification)
+    }
+    
+    private func getIndex(for key: NumpadKey) -> Int {
+        switch key {
+        case .num1: return 0
+        case .num2: return 1
+        case .num3: return 2
+        case .num4: return 3
+        case .num5: return 4
+        case .num6: return 5
+        case .num7: return 6
+        case .num8: return 7
+        case .num9: return 8
+        default: return -1
+        }
     }
 }
 

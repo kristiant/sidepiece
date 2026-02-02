@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct LibraryView: View {
     @ObservedObject var snippetRepository: SnippetRepository
@@ -39,7 +40,6 @@ struct LibraryView: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            // Folders Column
             VStack(spacing: 0) {
                 folderHeader
                 Divider()
@@ -49,13 +49,10 @@ struct LibraryView: View {
             
             Divider()
             
-            // Snippets Column
             VStack(spacing: 0) {
                 snippetFilterHeader
                 Divider()
                 snippetList
-                Divider()
-                actionButtons
             }
             .frame(maxWidth: .infinity)
         }
@@ -74,65 +71,79 @@ struct LibraryView: View {
     }
     
     private var folderHeader: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 4) {
-                BreadcrumbItem(title: "Library", isBold: navigationPath.isEmpty) {
-                    navigationPath.removeAll()
-                } onDrop: { providers in
-                    handleDrop(providers, into: nil)
-                }
+        HStack(spacing: 8) {
+            breadcrumbContainer
+            Spacer()
+            newFolderButton
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 44)
+    }
+
+    private var breadcrumbContainer: some View {
+        HStack(spacing: 4) {
+            BreadcrumbItem(title: "Library", isBold: navigationPath.isEmpty) {
+                withAnimation { navigationPath.removeAll() }
+            } onDrop: { onDrop($0, to: nil) }
+            
+            ForEach(navigationPath.indices, id: \.self) { index in
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.secondary.opacity(0.5))
                 
-                ForEach(navigationPath.indices, id: \.self) { index in
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    
-                    BreadcrumbItem(title: navigationPath[index].name, isBold: index == navigationPath.count - 1) {
-                        navigationPath = Array(navigationPath.prefix(index + 1))
-                    } onDrop: { providers in
-                        handleDrop(providers, into: navigationPath[index].id)
-                    }
-                }
-                
-                Spacer()
-                
-                Button(action: { isShowingCreateFolder = true }) {
-                    Image(systemName: "folder.badge.plus")
-                }
-                .buttonStyle(.plain)
-                .help("New Folder")
+                BreadcrumbItem(title: navigationPath[index].name, isBold: index == navigationPath.count - 1) {
+                    withAnimation { navigationPath = Array(navigationPath.prefix(index + 1)) }
+                } onDrop: { onDrop($0, to: navigationPath[index].id) }
             }
         }
-        .padding(10)
-        .frame(height: 44)
+    }
+
+    private var newFolderButton: some View {
+        Button(action: { isShowingCreateFolder = true }) {
+            Image(systemName: "folder.badge.plus")
+                .foregroundColor(.accentColor)
+        }
+        .buttonStyle(.plain)
+        .help("New Folder")
     }
     
     private var snippetFilterHeader: some View {
-        VStack(spacing: 8) {
-            HStack {
-                TextField("Search snippets...", text: $searchText)
-                    .textFieldStyle(.roundedBorder)
-                    .controlSize(.small)
-                
-                Button(action: { isShowingCreateSnippet = true }) {
-                    Image(systemName: "doc.badge.plus")
-                }
-                .buttonStyle(.plain)
-                .help("New Snippet")
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                TextField("Search...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11, weight: .medium))
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.secondary.opacity(0.05))
+            .cornerRadius(6)
             
+            Button(action: { isShowingCreateSnippet = true }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 20, height: 20)
+                    .background(Color.accentColor.opacity(0.1))
+                    .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            .help("New Snippet")
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .frame(height: 44)
     }
     
-    private func assignShortcut(for snippet: Snippet) {
+    private func bind(_ snippet: Snippet) {
         assigningSnippet = snippet
     }
     
     private var folderList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                // folders
                 ForEach(currentFolder == nil ? rootCategories : subCategories) { category in
                     FolderRow(
                         category: category,
@@ -142,11 +153,8 @@ struct LibraryView: View {
                                 navigationPath.append(category)
                             }
                         },
-                        onDrop: { providers in
-                            handleDrop(providers, into: category.id)
-                        }
+                        onDrop: { onDrop($0, to: category.id) }
                     )
-                    .onDrag { NSItemProvider(object: category.id.uuidString as NSString) }
                     .contextMenu {
                         Button(role: .destructive) {
                             snippetRepository.deleteCategory(category.id)
@@ -167,7 +175,6 @@ struct LibraryView: View {
                             onEdit: { editingSnippet = snippet },
                             onDelete: { snippetRepository.deleteSnippet(snippet) }
                         )
-                        .onDrag { NSItemProvider(object: snippet.id.uuidString as NSString) }
                     }
                 }
                 
@@ -200,7 +207,7 @@ struct LibraryView: View {
             }
         }
         .onDrop(of: [.text], isTargeted: nil) { providers in
-            handleDrop(providers, into: currentFolder?.id)
+            onDrop(providers, to: currentFolder?.id)
         }
     }
     
@@ -212,28 +219,20 @@ struct LibraryView: View {
                     $0.content.lowercased().contains(searchText.lowercased())
                 }
                 
+                if searchText.isEmpty {
+                    sectionHeader("SNIPS")
+                }
+
                 ForEach(snippets) { snippet in
-                    SnippetLibraryRow(
-                        snippet: snippet,
-                        categoryName: snippet.categoryId.flatMap { id in snippetRepository.getCategory(id: id)?.name },
-                        onEdit: { editingSnippet = snippet },
-                        onDelete: { snippetRepository.deleteSnippet(snippet) }
-                    )
-                    .onDrag { NSItemProvider(object: snippet.id.uuidString as NSString) }
-                    .contextMenu {
-                        Button {
-                            assignShortcut(for: snippet)
-                        } label: {
-                            Label("Assign to Hotkey...", systemImage: "keyboard")
-                        }
-                        
-                        Divider()
-                        
-                        Button(role: .destructive) {
-                            snippetRepository.deleteSnippet(snippet)
-                        } label: {
-                            Label("Delete Snippet", systemImage: "trash")
-                        }
+                    snippetRow(snippet)
+                }
+
+                if searchText.isEmpty {
+                    sectionHeader("FNCS")
+                        .padding(.top, 12)
+                    
+                    ForEach(KeyBinding.AppFunction.allCases, id: \.self) {
+                        AppFunctionRow(function: $0)
                     }
                 }
                 
@@ -259,33 +258,43 @@ struct LibraryView: View {
                     .padding(.vertical, 40)
                 }
                 
-                Spacer()
             }
             .padding(8)
             .frame(maxWidth: .infinity, minHeight: 500, alignment: .topLeading)
             .contentShape(Rectangle())
-            .contextMenu {
-                Button {
-                    targetCategoryIdForNewSnippet = nil
-                    isShowingCreateSnippet = true
-                } label: {
-                    Label("New Snippet", systemImage: "doc.badge.plus")
-                }
-            }
         }
     }
     
-    private func handleDrop(_ providers: [NSItemProvider], into targetId: UUID?) -> Bool {
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 8, weight: .bold, design: .monospaced))
+            .foregroundColor(.secondary.opacity(0.3))
+            .padding(.horizontal, 10)
+    }
+    
+    private func snippetRow(_ snippet: Snippet) -> some View {
+        SnippetLibraryRow(
+            snippet: snippet,
+            categoryName: snippet.categoryId.flatMap { snippetRepository.getCategory(id: $0)?.name },
+            onEdit: { editingSnippet = snippet },
+            onDelete: { snippetRepository.deleteSnippet(snippet) }
+        )
+        .contextMenu {
+            Button { bind(snippet) } label: { Label("Bind", systemImage: "keyboard") }
+            Divider()
+            Button(role: .destructive) { snippetRepository.deleteSnippet(snippet) } label: { Label("Delete", systemImage: "trash") }
+        }
+    }
+    
+    private func onDrop(_ providers: [NSItemProvider], to targetId: UUID?) -> Bool {
         for provider in providers {
-            _ = provider.loadObject(ofClass: NSString.self) { string, _ in
-                guard let idString = string as? String, let id = UUID(uuidString: idString) else { return }
+            _ = provider.loadObject(ofClass: NSString.self) { str, _ in
+                guard let idStr = str as? String, let id = UUID(uuidString: idStr) else { return }
                 
                 DispatchQueue.main.async {
-                    if let _ = snippetRepository.getSnippet(id: id) {
-                        // It's a snippet
+                    if snippetRepository.getSnippet(id: id) != nil {
                         snippetRepository.moveSnippet(id, toCategoryId: targetId)
-                    } else if let _ = snippetRepository.getCategory(id: id) {
-                        // It's a category
+                    } else if snippetRepository.getCategory(id: id) != nil {
                         snippetRepository.moveCategory(id, toParentId: targetId)
                     }
                 }
@@ -294,22 +303,6 @@ struct LibraryView: View {
         return true
     }
     
-    private var actionButtons: some View {
-        HStack {
-            Spacer()
-            
-            Button(action: { 
-                targetCategoryIdForNewSnippet = nil
-                isShowingCreateSnippet = true 
-            }) {
-                Label("New Snippet", systemImage: "doc.badge.plus")
-            }
-            .buttonStyle(.borderedProminent)
-            
-            Spacer()
-        }
-        .padding()
-    }
     
     private var createFolderSheet: some View {
         VStack(spacing: 20) {
@@ -358,11 +351,12 @@ struct BreadcrumbItem: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .fontWeight(isBold ? .bold : .regular)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 2)
-                .background(isTargeted ? Color.accentColor.opacity(0.2) : Color.clear)
-                .cornerRadius(4)
+                .font(.system(size: 11, weight: isBold ? .bold : .medium))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(isTargeted ? Color.accentColor.opacity(0.15) : (isBold ? Color.accentColor.opacity(0.05) : Color.clear))
+                .foregroundColor(isBold ? .primary : .secondary)
+                .cornerRadius(6)
         }
         .buttonStyle(.plain)
         .onDrop(of: [.text], isTargeted: $isTargeted) { providers in
@@ -381,42 +375,38 @@ struct FolderRow: View {
     @State private var isTargeted = false
     
     var body: some View {
-        Button(action: onTap) {
-            HStack {
-                Image(systemName: isTargeted ? "folder.fill.badge.plus" : "folder.fill")
-                    .foregroundColor(isTargeted ? .green : .accentColor)
-                    .font(.title3)
+        HStack(spacing: 12) {
+            Image(systemName: isTargeted ? "folder.fill.badge.plus" : "folder.fill")
+                .foregroundColor(isTargeted ? .green : .accentColor)
+                .font(.system(size: 16))
+            
+            VStack(alignment: .leading, spacing: 0) {
                 Text(category.name)
-                    .fontWeight(isTargeted ? .bold : .regular)
-                
-                Spacer()
+                    .font(.system(size: 13, weight: .medium))
                 
                 let count = repository.getSnippets(in: category.id).count
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(10)
-                }
-                
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
+                Text("\(count) \(count == 1 ? "snippet" : "snippets")")
+                    .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .background(isTargeted ? Color.green.opacity(0.1) : (isHovered ? Color.accentColor.opacity(0.1) : Color.clear))
-            .cornerRadius(8)
-            .contentShape(Rectangle())
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.secondary.opacity(0.5))
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .background(isTargeted ? Color.green.opacity(0.1) : (isHovered ? Color.accentColor.opacity(0.08) : Color.clear))
+        .cornerRadius(10)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
         .onHover { isHovered = $0 }
         .onDrop(of: [.text], isTargeted: $isTargeted) { providers in
             onDrop(providers)
         }
+        .onDrag { NSItemProvider(object: category.id.uuidString as NSString) }
     }
 }
 
@@ -426,56 +416,93 @@ struct SnippetLibraryRow: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     
+    @State private var isHovered = false
+    
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "doc.text")
-                .font(.title3)
-                .foregroundColor(.secondary)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary.opacity(0.8))
+                .frame(width: 32, height: 32)
+                .background(Color.secondary.opacity(0.05))
+                .cornerRadius(8)
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(snippet.title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                Text(snippet.preview)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                 
-                Text(categoryName ?? "ungrouped")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.accentColor.opacity(0.7))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.accentColor.opacity(0.1))
-                    .cornerRadius(4)
+                HStack(spacing: 6) {
+                    if let categoryName = categoryName {
+                        Text(categoryName)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.accentColor.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                    
+                    Text(snippet.preview)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             Spacer()
             
-            HStack(spacing: 12) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                        .font(.body)
-                        .foregroundColor(.accentColor)
+            if isHovered {
+                HStack(spacing: 10) {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 11))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
+                    
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.red.opacity(0.7))
                 }
-                .buttonStyle(.plain)
-                .help("Edit Snippet")
-                
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.body)
-                        .foregroundColor(.red.opacity(0.8))
-                }
-                .buttonStyle(.plain)
-                .help("Delete Snippet")
+                .transition(.opacity)
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(isHovered ? Color.accentColor.opacity(0.08) : Color.clear)
+        .cornerRadius(10)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+        .contentShape(Rectangle())
+        .onDrag { NSItemProvider(object: snippet.id.uuidString as NSString) }
     }
 }
 
-// Simple Snippet Editor for general use
+struct AppFunctionRow: View {
+    let function: KeyBinding.AppFunction
+    @State private var hovered = false
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: function.icon).font(.system(size: 10)).foregroundColor(.accentColor)
+                .frame(width: 24, height: 24).background(Color.accentColor.opacity(0.1)).cornerRadius(6)
+            Text(function.displayName.uppercased()).font(.system(size: 10, weight: .bold, design: .monospaced))
+            Spacer()
+        }
+        .padding(.vertical, 4).padding(.horizontal, 8)
+        .background(hovered ? Color.accentColor.opacity(0.05) : .clear).cornerRadius(6)
+        .onHover { hovered = $0 }.contentShape(Rectangle())
+        .onDrag { NSItemProvider(object: "fnc:\(function.rawValue)" as NSString) }
+    }
+}
+
 struct SnippetEditorSheet: View {
     @Environment(\.dismiss) var dismiss
     @State var title: String
@@ -491,43 +518,31 @@ struct SnippetEditorSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Edit Snippet")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("EDIT SNIP").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(.secondary)
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Title").font(.caption).foregroundColor(.secondary)
-                TextField("Snippet Title", text: $title)
-                    .textFieldStyle(.roundedBorder)
-            }
+            TextField("TITLE", text: $title).textFieldStyle(.plain)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .padding(8).background(Color.secondary.opacity(0.05)).cornerRadius(6)
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Content").font(.caption).foregroundColor(.secondary)
-                TextEditor(text: $content)
-                    .frame(height: 150)
-                    .border(Color.secondary.opacity(0.2))
-            }
+            TextEditor(text: $content).font(.system(size: 11, design: .monospaced))
+                .frame(height: 120).padding(4).background(Color.secondary.opacity(0.03)).cornerRadius(6)
             
             HStack {
-                Button("Cancel") { dismiss() }
+                Button("CANCEL") { dismiss() }.font(.system(size: 10, weight: .bold, design: .monospaced))
                 Spacer()
-                Button("Save") {
-                    var updated = snippet
-                    updated.title = title
-                    updated.content = content
-                    
-                    if repository.getSnippet(id: updated.id) != nil {
-                        repository.updateSnippet(updated)
-                    } else {
-                        repository.addSnippet(updated)
-                    }
-                    
+                Button("SAVE") {
+                    var up = snippet
+                    up.title = title
+                    up.content = content
+                    if repository.getSnippet(id: up.id) != nil { repository.updateSnippet(up) }
+                    else { repository.addSnippet(up) }
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
             }
         }
-        .padding()
-        .frame(width: 400)
+        .padding(16).frame(width: 380)
     }
 }

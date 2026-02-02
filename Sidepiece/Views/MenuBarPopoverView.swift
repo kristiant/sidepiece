@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// The popover view shown when clicking the menu bar icon
 struct MenuBarPopoverView: View {
     
     @ObservedObject var snippetRepository: SnippetRepository
     @ObservedObject var configurationManager: ConfigurationManager
     let onSnippetSelected: (Snippet) -> Void
+    let onAppFunctionSelected: (KeyBinding.AppFunction) -> Void
     
     @State private var selectedCategory: NumpadKey.Category = .numbers
     @State private var showingSettings = false
@@ -16,17 +16,15 @@ struct MenuBarPopoverView: View {
             Divider()
             
             HStack(spacing: 0) {
-                // Left: Hotkeys
                 VStack(spacing: 0) {
-                    categoryPicker
+                    tabs
                     Divider()
-                    keyGrid
+                    grid
                 }
                 .frame(width: 350)
                 
                 Divider()
                 
-                // Folders & Snippets (LibraryView now handles both horizontally)
                 LibraryView(
                     snippetRepository: snippetRepository,
                     configurationManager: configurationManager
@@ -47,73 +45,66 @@ struct MenuBarPopoverView: View {
     }
     
     private var header: some View {
-        HStack {
+        HStack(spacing: 0) {
+            // Hotkeys Header
             HStack {
-                HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "keyboard")
-                        .foregroundColor(.accentColor)
                     Text("Hot Keys")
-                        .font(.headline)
                 }
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.accentColor)
                 
                 Spacer()
                 
-                Button(action: {
+                Button("Clear All") {
                     let alert = NSAlert()
                     alert.messageText = "Clear all hotkeys?"
-                    alert.informativeText = "This will remove all snippet assignments from the current profile. This cannot be undone."
-                    alert.addButton(withTitle: "Clear All")
+                    alert.informativeText = "Reset all assignments for the current profile."
+                    alert.addButton(withTitle: "Clear")
                     alert.addButton(withTitle: "Cancel")
                     alert.alertStyle = .warning
-                    
                     if alert.runModal() == .alertFirstButtonReturn {
                         configurationManager.clearAllBindings()
                     }
-                }) {
-                    Text("Clear All")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.red.opacity(0.8))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(4)
                 }
+                .font(.system(size: 10, weight: .bold))
                 .buttonStyle(.plain)
+                .foregroundColor(.red.opacity(0.8))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(4)
             }
-            .frame(width: 330, alignment: .leading)
-            .padding(.trailing, 20)
+            .frame(width: 350)
+            .padding(.horizontal, 16)
             
-            Spacer()
+            Divider()
             
-            HStack {
-                Image(systemName: "folder.fill")
-                    .foregroundColor(.accentColor)
-                Text("Folders")
-                    .font(.headline)
+            // Library Header
+            HStack(spacing: 12) {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.fill")
+                    Text("Library")
+                }
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.accentColor)
+                
+                Spacer()
             }
-            .frame(width: 250, alignment: .leading)
-            
-            Spacer()
-            
-            HStack {
-                Image(systemName: "doc.text.fill")
-                    .foregroundColor(.accentColor)
-                Text("Snippets")
-                    .font(.headline)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
         }
-        .padding()
+        .frame(height: 50)
         .background(Color(nsColor: .windowBackgroundColor))
     }
     
-    private var categoryPicker: some View {
+    private var tabs: some View {
         HStack(spacing: 4) {
             ForEach(NumpadKey.Category.allCases, id: \.self) { category in
                 CategoryTab(
                     category: category,
                     isSelected: selectedCategory == category,
-                    bindingCount: bindingCount(for: category)
+                    bindingCount: count(for: category)
                 ) {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedCategory = category
@@ -125,13 +116,13 @@ struct MenuBarPopoverView: View {
         .padding(.vertical, 8)
     }
     
-    private func bindingCount(for category: NumpadKey.Category) -> Int {
+    private func count(for category: NumpadKey.Category) -> Int {
         NumpadKey.keys(in: category).filter { key in
             snippetRepository.getBinding(for: key) != nil
         }.count
     }
     
-    private var keyGrid: some View {
+    private var grid: some View {
         ScrollView {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(NumpadKey.keys(in: selectedCategory)) { key in
@@ -142,12 +133,8 @@ struct MenuBarPopoverView: View {
                         configurationManager: configurationManager,
                         snippetRepository: snippetRepository
                     ) {
-                        // In the popover, clicking a key triggers it
                         if let binding = snippetRepository.getBinding(for: key) {
-                            handleBindingSelected(binding)
-                        } else {
-                            // If empty, maybe open editor?
-                            // For now just show help
+                            onSelect(binding)
                         }
                     }
                 }
@@ -156,20 +143,20 @@ struct MenuBarPopoverView: View {
         }
     }
     
-    private func handleBindingSelected(_ binding: KeyBinding) {
+    private func onSelect(_ binding: KeyBinding) {
         switch binding.action {
         case .snippet(let snippet):
             onSnippetSelected(snippet)
-        case .folder(let id):
-            // Folders could navigate the library? 
-            // For now just logs
-            print("Folder selected: \(id)")
+        case .folder:
+            break
         case .switchProfile(let id):
             if let profile = configurationManager.profiles.first(where: { $0.id == id }) {
                 configurationManager.setActiveProfile(profile)
             }
         case .cycleProfile(let direction):
             configurationManager.cycleProfiles(direction: direction)
+        case .appFunction(let function):
+            onAppFunctionSelected(function)
         }
     }
     

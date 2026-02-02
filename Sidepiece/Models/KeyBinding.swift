@@ -8,6 +8,7 @@ struct KeyBinding: Identifiable, Codable, Equatable {
         case folder(UUID)
         case switchProfile(UUID)
         case cycleProfile(direction: CycleDirection)
+        case appFunction(AppFunction)
         
         var displayName: String {
             switch self {
@@ -19,6 +20,8 @@ struct KeyBinding: Identifiable, Codable, Equatable {
                 return "Switch Profile"
             case .cycleProfile(let direction):
                 return "Cycle Profiles (\(direction.rawValue.capitalized))"
+            case .appFunction(let function):
+                return function.displayName
             }
         }
     }
@@ -26,6 +29,22 @@ struct KeyBinding: Identifiable, Codable, Equatable {
     enum CycleDirection: String, Codable {
         case next
         case previous
+    }
+    
+    enum AppFunction: String, Codable, CaseIterable {
+        case peakSnippets
+        
+        var displayName: String {
+            switch self {
+            case .peakSnippets: return "Peak Snippets"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .peakSnippets: return "eye.fill"
+            }
+        }
     }
     
     // MARK: - Properties

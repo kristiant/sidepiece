@@ -30,6 +30,9 @@ struct KeyBindingEditorSheet: View {
     // Category for new snippet
     @State private var selectedCategoryId: UUID?
     
+    // Function State
+    @State private var selectedFunction: KeyBinding.AppFunction = .peakSnippets
+    
     @Environment(\.dismiss) private var dismiss
     
     enum ActionType: String, CaseIterable, Identifiable {
@@ -37,6 +40,7 @@ struct KeyBindingEditorSheet: View {
         case existingSnippet = "Existing Snippet"
         case folder = "Folder"
         case switchProfile = "Switch Profile"
+        case appFunction = "App Function"
         
         var id: String { self.rawValue }
         
@@ -46,6 +50,7 @@ struct KeyBindingEditorSheet: View {
             case .existingSnippet: return "doc.on.doc.fill"
             case .folder: return "folder.fill"
             case .switchProfile: return "person.fill"
+            case .appFunction: return "bolt.fill"
             }
         }
     }
@@ -90,6 +95,8 @@ struct KeyBindingEditorSheet: View {
                         folderPicker
                     case .switchProfile:
                         combinedProfileFields
+                    case .appFunction:
+                        appFunctionPicker
                     }
                 }
                 .padding()
@@ -124,6 +131,9 @@ struct KeyBindingEditorSheet: View {
                     selectedActionType = .switchProfile
                     profileActionType = .cycle
                     cycleDirection = direction
+                case .appFunction(let function):
+                    selectedActionType = .appFunction
+                    selectedFunction = function
                 }
             } else {
                 selectedProfileId = configurationManager.profiles.first?.id
@@ -326,6 +336,25 @@ struct KeyBindingEditorSheet: View {
         }
     }
     
+    private var appFunctionPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Select App Function")
+                .font(.subheadline)
+                .fontWeight(.medium)
+            
+            Picker("", selection: $selectedFunction) {
+                ForEach(KeyBinding.AppFunction.allCases, id: \.self) { function in
+                    Text(function.displayName).tag(function)
+                }
+            }
+            .pickerStyle(.radioGroup)
+            
+            Text("Assigning an app function allows you to trigger special actions directly from your numpad.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+    
     private var sheetFooter: some View {
         HStack {
             if !isNewBinding {
@@ -372,6 +401,8 @@ struct KeyBindingEditorSheet: View {
                 return selectedProfileId != nil
             }
             return true
+        case .appFunction:
+            return true
         }
     }
     
@@ -398,6 +429,8 @@ struct KeyBindingEditorSheet: View {
             } else {
                 updatedBinding.action = .cycleProfile(direction: cycleDirection)
             }
+        case .appFunction:
+            updatedBinding.action = .appFunction(selectedFunction)
         }
         
         updatedBinding.updatedAt = Date()
