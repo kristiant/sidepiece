@@ -20,7 +20,11 @@ else
     echo "⚠️  XcodeGen not found. Skipping generation..."
 fi
 
-# 2. Build to Stable Path
+# 2. Handle Running Instances
+echo "Stopping any existing instances..."
+killall "$APP_NAME" 2>/dev/null || true
+
+# 3. Build to Stable Path
 echo "🛠 Building Sidepiece..."
 mkdir -p "$STABLE_BUILD_DIR"
 
@@ -32,21 +36,17 @@ xcodebuild -project "$APP_NAME.xcodeproj" \
            CONFIGURATION_BUILD_DIR="$STABLE_BUILD_DIR" \
            clean build
 
-# 3. Handle Running Instances
-echo "Stopping any existing instances..."
-killall "$APP_NAME" 2>/dev/null || true
-
 # 4. Handle Permissions (Fixes the "Ghost Permission" bug)
 # Note: Automatic grant requires Full Disk Access and is usually blocked by SIP.
 # Resetting ensures a fresh, working prompt/toggle.
-echo "🧹 Resetting Accessibility permissions for $BUNDLE_ID..."
-tccutil reset Accessibility "$BUNDLE_ID" 2>/dev/null || true
+# echo "🧹 Resetting Accessibility permissions for $BUNDLE_ID..."
+# tccutil reset Accessibility "$BUNDLE_ID" 2>/dev/null || true
 
-# 6. Launch
+# 5. Launch
 echo "🎈 Launching $APP_NAME..."
 open "$APP_PATH"
 
-# 7. Assist User
+# 6. Assist User
 echo "----------------------------------------------------------------"
 echo "✅ BUILD COMPLETE"
 echo "----------------------------------------------------------------"
@@ -55,5 +55,5 @@ echo "If the HUD doesn't respond to keys, please ensure it's enabled in:"
 echo "System Settings > Privacy & Security > Accessibility"
 echo "----------------------------------------------------------------"
 
-# Open settings just in case
-open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+# Open settings just in case if not granted
+# (We check manually in the app now)
