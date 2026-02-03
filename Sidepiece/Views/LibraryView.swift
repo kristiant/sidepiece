@@ -45,7 +45,7 @@ struct LibraryView: View {
                 Divider()
                 folderList
             }
-            .frame(width: 250)
+            .frame(width: 230)
             
             Divider()
             

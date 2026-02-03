@@ -35,7 +35,7 @@ struct MenuBarPopoverView: View {
             Divider()
             footer
         }
-        .frame(width: 1000, height: 600)
+        .frame(width: 950, height: 650)
         .sheet(isPresented: $showingSettings) {
             SettingsView(
                 configurationManager: configurationManager,
@@ -145,8 +145,10 @@ struct MenuBarPopoverView: View {
     
     private func onSelect(_ binding: KeyBinding) {
         switch binding.action {
-        case .snippet(let snippet):
-            onSnippetSelected(snippet)
+        case .snippet(let id):
+            if let snippet = snippetRepository.getSnippet(id: id) {
+                onSnippetSelected(snippet)
+            }
         case .folder:
             break
         case .switchProfile(let id):

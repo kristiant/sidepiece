@@ -234,8 +234,8 @@ struct KeyBindingConfigView: View {
         if let existing = snippetRepository.getBinding(for: key) {
             editingBinding = existing
         } else {
-            // Create a new binding with an empty snippet as default
-            editingBinding = KeyBinding(key: key, action: .snippet(Snippet(title: "", content: "")))
+            // Create a new binding without an action yet
+            editingBinding = KeyBinding(key: key, action: .appFunction(.peakSnippets))
         }
         isEditingSnippet = true
     }
@@ -272,7 +272,7 @@ struct KeyBindingConfigView: View {
 
 #Preview {
     KeyBindingConfigView(
-        snippetRepository: SnippetRepository(configurationManager: ConfigurationManager()),
-        configurationManager: ConfigurationManager()
+        snippetRepository: SnippetRepository.shared,
+        configurationManager: ConfigurationManager.shared
     )
 }

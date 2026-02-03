@@ -138,10 +138,10 @@ struct KeyCell: View {
                        let fncType = KeyBinding.AppFunction(rawValue: String(droppedStr.dropFirst(4))) {
                         snippetRepository.updateBinding(KeyBinding(key: key, action: .appFunction(fncType)))
                     } else if let id = UUID(uuidString: droppedStr) {
-                        if let snippet = snippetRepository.getSnippet(id: id) {
-                            snippetRepository.updateBinding(KeyBinding(key: key, action: .snippet(snippet)))
+                        if let _ = snippetRepository.getSnippet(id: id) {
+                            snippetRepository.updateBinding(KeyBinding(key: key, action: .snippet(id: id)))
                         } else if let cat = snippetRepository.getCategory(id: id) {
-                            snippetRepository.updateBinding(KeyBinding(key: key, action: .folder(cat.id)))
+                            snippetRepository.updateBinding(KeyBinding(key: key, action: .folder(id: cat.id)))
                         }
                     }
                 }
@@ -153,8 +153,8 @@ struct KeyCell: View {
     
     private func actionName(for action: KeyBinding.Action) -> String {
         switch action {
-        case .snippet(let snippet):
-            return snippet.title.isEmpty ? "Untitled" : snippet.title
+        case .snippet(let id):
+            return snippetRepository.getSnippet(id: id)?.title ?? "Untitled"
         case .folder(let id):
             return snippetRepository.categories.first(where: { $0.id == id })?.name ?? "Unknown Folder"
         case .switchProfile(let id):

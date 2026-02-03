@@ -378,6 +378,15 @@ struct GeneralSettingsView: View {
                         }
                     ))
                     
+                    Toggle("Auto-exit folder after selection", isOn: Binding(
+                        get: { configurationManager.configuration.autoExitFolderAfterSelection },
+                        set: { newValue in
+                            var config = configurationManager.configuration
+                            config.autoExitFolderAfterSelection = newValue
+                            configurationManager.updateConfiguration(config)
+                        }
+                    ))
+                    
                     Toggle("Auto-peek folder contents", isOn: Binding(
                         get: { configurationManager.configuration.autoPeakFolderContents },
                         set: { newValue in
@@ -413,6 +422,26 @@ struct GeneralSettingsView: View {
                     Text("Data Management")
                         .font(.headline)
                     
+                    HStack(spacing: 12) {
+                        Button(action: exportAllData) {
+                            Label("Export All...", systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button(action: importAllData) {
+                            Label("Import All...", systemImage: "square.and.arrow.down")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    Text("Backup or restore all profiles, snippets, and app settings to a JSON file.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Divider()
+                        .padding(.vertical, 8)
+                    
                     Button {
                         showingClearAlert = true
                     } label: {
@@ -421,7 +450,7 @@ struct GeneralSettingsView: View {
                             Text("Clear all key bindings")
                             Spacer()
                         }
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.red.opacity(0.8))
                         .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
@@ -445,55 +474,138 @@ struct GeneralSettingsView: View {
             Text("Are you sure you want to remove all key bindings in the current profile? This cannot be undone.")
         }
     }
+    
+    // MARK: - Import/Export Logic
+    
+    private func exportAllData() {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.json]
+        savePanel.canCreateDirectories = true
+        savePanel.isExtensionHidden = false
+        savePanel.title = "Export Sidepiece Configuration"
+        savePanel.message = "Choose where to save your backup"
+        savePanel.nameFieldStringValue = "sidepiece-backup-\(ISO8601DateFormatter().string(from: Date()).prefix(10)).json"
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    try configurationManager.exportUnifiedData(
+                        snippets: snippetRepository.snippets,
+                        categories: snippetRepository.categories,
+                        to: url
+                    )
+                    print("✅ Exported configuration to \(url.path)")
+                } catch {
+                    print("❌ Failed to export configuration: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func importAllData() {
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.canChooseFiles = true
+        openPanel.title = "Import Sidepiece Configuration"
+        openPanel.message = "Choose a Sidepiece backup file to restore"
+        
+        openPanel.begin { response in
+            if response == .OK, let url = openPanel.url {
+                do {
+                    let importedData = try configurationManager.importUnifiedData(from: url)
+                    snippetRepository.importData(
+                        snippets: importedData.snippets,
+                        categories: importedData.categories
+                    )
+                    print("✅ Imported configuration from \(url.path)")
+                } catch {
+                    print("❌ Failed to import configuration: \(error)")
+                }
+            }
+        }
+    }
 }
 
 struct AccessibilityStatusView: View {
     @State private var hasPermission = false
+    @State private var timer: Timer?
     
     var body: some View {
-        HStack(spacing: 6) {
-            if hasPermission {
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 8, height: 8)
-                Text("Granted")
-                    .foregroundColor(.secondary)
-            } else {
-                Button(action: {
-                    let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-                    NSWorkspace.shared.open(url)
-                }) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 8, height: 8)
-                        Text("Not Granted")
-                            .fontWeight(.medium)
-                        Image(systemName: "arrow.up.forward.app")
-                            .font(.caption2)
+        VStack(alignment: .trailing, spacing: 4) {
+            HStack(spacing: 6) {
+                if hasPermission {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 8, height: 8)
+                    Text("Granted")
+                        .foregroundColor(.green)
+                } else {
+                    Button(action: {
+                        requestPermission()
+                    }) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                            Text("Click to Authorize")
+                                .fontWeight(.medium)
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(6)
+                        .foregroundColor(.red)
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(6)
-                    .foregroundColor(.red)
+                    .buttonStyle(.plain)
+                }
+            }
+            
+            if !hasPermission {
+                Button(action: {
+                    let url = URL(fileURLWithPath: "/Users/kristian/dev/kt-projects/sidepiece/build/Debug/Sidepiece.app")
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }) {
+                    Text("App not in list? Click to show in Finder, then drag it in.")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                        .underline()
                 }
                 .buttonStyle(.plain)
-                .help("Open System Settings")
             }
         }
-        .onAppear { checkPermission() }
+        .onAppear { 
+            checkPermission()
+            // Auto-check every 2 seconds while settings are open
+            timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                checkPermission()
+            }
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
+        }
     }
     
     private func checkPermission() {
-        hasPermission = AXIsProcessTrusted()
+        hasPermission = HotkeyManager.shared.checkPermissions()
+    }
+    
+    private func requestPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
+        
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
     }
 }
 
 #Preview {
-    let config = ConfigurationManager()
-    return SettingsView(
-        configurationManager: config,
-        snippetRepository: SnippetRepository(configurationManager: config)
+    SettingsView(
+        configurationManager: ConfigurationManager.shared,
+        snippetRepository: SnippetRepository.shared
     )
 }

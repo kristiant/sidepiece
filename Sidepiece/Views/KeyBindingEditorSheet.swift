@@ -109,16 +109,13 @@ struct KeyBindingEditorSheet: View {
         .onAppear {
             if let binding = binding {
                 switch binding.action {
-                case .snippet(let snippet):
-                    // Check if this snippet exists in our repository to decide if it's "Existing" or "New"
-                    if snippetRepository.snippets.contains(where: { $0.id == snippet.id }) {
+                case .snippet(let id):
+                    if let snippet = snippetRepository.getSnippet(id: id) {
                         selectedActionType = .existingSnippet
                         selectedSnippet = snippet
                     } else {
-                        selectedActionType = .newSnippet
-                        snippetTitle = snippet.title
-                        snippetContent = snippet.content
-                        selectedCategoryId = snippet.categoryId
+                        // Snippet not found, maybe deleted?
+                        selectedActionType = .existingSnippet
                     }
                 case .folder(let id):
                     selectedActionType = .folder
@@ -412,19 +409,20 @@ struct KeyBindingEditorSheet: View {
         switch selectedActionType {
         case .newSnippet:
             let snippet = Snippet(title: snippetTitle, content: snippetContent, categoryId: selectedCategoryId)
-            updatedBinding.action = .snippet(snippet)
+            snippetRepository.addSnippet(snippet)
+            updatedBinding.action = .snippet(id: snippet.id)
         case .existingSnippet:
             if let snippet = selectedSnippet {
-                updatedBinding.action = .snippet(snippet)
+                updatedBinding.action = .snippet(id: snippet.id)
             }
         case .folder:
             if let folderId = selectedFolderId {
-                updatedBinding.action = .folder(folderId)
+                updatedBinding.action = .folder(id: folderId)
             }
         case .switchProfile:
             if profileActionType == .specific {
                 if let profileId = selectedProfileId {
-                    updatedBinding.action = .switchProfile(profileId)
+                    updatedBinding.action = .switchProfile(id: profileId)
                 }
             } else {
                 updatedBinding.action = .cycleProfile(direction: cycleDirection)

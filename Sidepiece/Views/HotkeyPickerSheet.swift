@@ -74,7 +74,7 @@ struct HotkeyPickerSheet: View {
     }
     
     private func assign(to key: NumpadKey) {
-        let binding = KeyBinding(key: key, action: .snippet(snippet))
+        let binding = KeyBinding(key: key, action: .snippet(id: snippet.id))
         snippetRepository.updateBinding(binding)
         dismiss()
     }
@@ -115,9 +115,12 @@ struct KeyShortcutCell: View {
     
     private func bindingTitle(_ binding: KeyBinding) -> String {
         switch binding.action {
-        case .snippet(let s): return s.title
-        case .folder(let id): return "Folder"
-        default: return "Reserved"
+        case .snippet(let id):
+            return SnippetRepository.shared.getSnippet(id: id)?.title ?? "Snippet"
+        case .folder(let id):
+            return SnippetRepository.shared.getCategory(id: id)?.name ?? "Folder"
+        default:
+            return binding.action.displayName
         }
     }
 }
