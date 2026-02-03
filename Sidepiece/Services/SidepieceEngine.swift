@@ -1,10 +1,12 @@
 import Foundation
 import AppKit
+import OSLog
 
 /// The central coordinator for Sidepiece. Bridges hotkeys, snippets, and UI.
 @MainActor
 final class SidepieceEngine: ObservableObject {
     static let shared = SidepieceEngine()
+    private let logger = Logger(subsystem: "com.sidepiece.app", category: "Engine")
     
     private let configManager = ConfigurationManager.shared
     private let snippetRepo = SnippetRepository.shared
@@ -28,7 +30,7 @@ final class SidepieceEngine: ObservableObject {
     }
     
     private func handleKeyPress(_ key: NumpadKey) {
-        NSLog("Sidepiece Engine: Handling key press: \(key.displayName)")
+        logger.info("Handling key press: \(key.displayName)")
         if let folderId = navigation.currentFolderId {
             handleFolderKeyPress(key, folderId: folderId)
             return
