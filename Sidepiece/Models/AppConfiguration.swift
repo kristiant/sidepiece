@@ -16,6 +16,7 @@ struct AppConfiguration: Codable, Equatable {
     var autoPaste: Bool
     var autoEnterAfterPaste: Bool
     var autoExitFolderMode: Bool
+    var autoExitFolderAfterSelection: Bool
     var autoPeakFolderContents: Bool
     
     // MARK: - Initialisation
@@ -32,6 +33,7 @@ struct AppConfiguration: Codable, Equatable {
         autoPaste: Bool = true,
         autoEnterAfterPaste: Bool = false,
         autoExitFolderMode: Bool = true,
+        autoExitFolderAfterSelection: Bool = true,
         autoPeakFolderContents: Bool = true
     ) {
         self.launchAtLogin = launchAtLogin
@@ -45,6 +47,7 @@ struct AppConfiguration: Codable, Equatable {
         self.autoPaste = autoPaste
         self.autoEnterAfterPaste = autoEnterAfterPaste
         self.autoExitFolderMode = autoExitFolderMode
+        self.autoExitFolderAfterSelection = autoExitFolderAfterSelection
         self.autoPeakFolderContents = autoPeakFolderContents
     }
     
@@ -61,6 +64,7 @@ struct AppConfiguration: Codable, Equatable {
         self.autoPaste = try container.decodeIfPresent(Bool.self, forKey: .autoPaste) ?? true
         self.autoEnterAfterPaste = try container.decodeIfPresent(Bool.self, forKey: .autoEnterAfterPaste) ?? false
         self.autoExitFolderMode = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderMode) ?? true
+        self.autoExitFolderAfterSelection = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderAfterSelection) ?? true
         self.autoPeakFolderContents = try container.decodeIfPresent(Bool.self, forKey: .autoPeakFolderContents) ?? true
     }
     

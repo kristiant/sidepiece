@@ -1,8 +1,10 @@
 import AppKit
 import Carbon.HIToolbox
+import OSLog
 
 /// Monitors global keyboard events for numpad key presses
 final class GlobalHotkeyMonitor {
+    private let logger = Logger(subsystem: "com.sidepiece.app", category: "Monitor")
     
     // MARK: - Types
     
@@ -11,23 +13,23 @@ final class GlobalHotkeyMonitor {
     
     // MARK: - Properties
     
-    /// Called when a supported numpad key is pressed
+    /// Called when a monitored key is pressed
     var onKeyPressed: KeyHandler?
     
-    /// Called to check if a key should be consumed (only consume if binding exists)
+    /// Called to determine if a key should be consumed or passed through
     var shouldConsumeKey: ShouldConsumeHandler?
     
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private(set) var isRunning = false
     
-    // MARK: - Public Methods
+    // MARK: - Monitoring
     
     /// Starts monitoring for global key events
     func start() {
         guard !isRunning else { return }
         guard hasAccessibilityPermissions() else {
-            print("Sidepiece: Cannot start hotkey monitor - accessibility permissions required")
+            logger.error("Cannot start hotkey monitor - accessibility permissions required")
             return
         }
         
@@ -47,7 +49,7 @@ final class GlobalHotkeyMonitor {
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
-            NSLog("Sidepiece: Failed to create event tap - permission might be lost or binary signature invalid")
+            logger.error("Failed to create event tap - permission might be lost or binary signature invalid")
             return
         }
         
@@ -61,7 +63,7 @@ final class GlobalHotkeyMonitor {
         CGEvent.tapEnable(tap: tap, enable: true)
         isRunning = true
         
-        NSLog("Sidepiece: Global hotkey monitor successfully started and enabled.")
+        logger.info("Global hotkey monitor successfully started and enabled.")
     }
     
     /// Stops monitoring for global key events
@@ -80,54 +82,23 @@ final class GlobalHotkeyMonitor {
         runLoopSource = nil
         isRunning = false
         
-        print("Sidepiece: Global hotkey monitor stopped")
+        logger.info("Global hotkey monitor stopped")
     }
     
     // MARK: - Accessibility Permissions
     
-    /// Checks if the app has accessibility permissions
+    /// Checks if the application has accessibility permissions required for event taps
     func hasAccessibilityPermissions() -> Bool {
-        AXIsProcessTrusted()
-    }
-    
-    /// Prompts the user to grant accessibility permissions
-    func requestAccessibilityPermissions() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        AXIsProcessTrustedWithOptions(options as CFDictionary)
-    }
-    
-    /// Opens System Preferences to the Accessibility pane
-    func openAccessibilityPreferences() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-        NSWorkspace.shared.open(url)
+        return AXIsProcessTrusted()
     }
     
     // MARK: - Event Handling
     
-    private func handleEvent(
-        proxy: CGEventTapProxy,
-        type: CGEventType,
-        event: CGEvent
-    ) -> Unmanaged<CGEvent>? {
+    private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        guard type == .keyDown else { return Unmanaged.passUnretained(event) }
         
-        // Handle tap disabled events (can happen if system suspends the tap)
-        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            NSLog("Sidepiece: Event tap disabled (\(type.rawValue)), re-enabling...")
-            if let tap = eventTap {
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
-            return Unmanaged.passUnretained(event)
-        }
-        
-        guard type == .keyDown else {
-            return Unmanaged.passUnretained(event)
-        }
-        
-        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-        
-        // Check if this is a supported numpad key
-        guard let numpadKey = NumpadKey(keyCode: keyCode) else {
-            // Not a key we care about, pass it through
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        guard let numpadKey = NumpadKey(keyCode: UInt16(keyCode)) else {
             return Unmanaged.passUnretained(event)
         }
         
@@ -135,6 +106,7 @@ final class GlobalHotkeyMonitor {
         let shouldConsume = shouldConsumeKey?(numpadKey) ?? false
         
         if shouldConsume {
+            logger.info("Consuming key: \(numpadKey.displayName)")
             // Dispatch to handler on main thread
             DispatchQueue.main.async { [weak self] in
                 self?.onKeyPressed?(numpadKey)
@@ -143,6 +115,7 @@ final class GlobalHotkeyMonitor {
             // Consume the event (don't pass to other apps)
             return nil
         } else {
+            logger.debug("Passing through key: \(numpadKey.displayName)")
             // No binding for this key, pass it through to other apps
             return Unmanaged.passUnretained(event)
         }

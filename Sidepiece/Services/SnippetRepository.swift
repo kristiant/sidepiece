@@ -2,17 +2,24 @@ import Foundation
 import Combine
 
 /// Repository for managing snippets and key bindings
+@MainActor
 final class SnippetRepository: ObservableObject {
+    static let shared = SnippetRepository()
     
-    private let configurationManager: ConfigurationManager
+    private let configurationManager = ConfigurationManager.shared
     
     @Published private(set) var snippets: [Snippet] = []
     @Published private(set) var categories: [SnippetCategory] = []
     
-    init(configurationManager: ConfigurationManager) {
-        self.configurationManager = configurationManager
+    private init() {
         loadSnippets()
         loadCategories()
+    }
+    
+    func getFolderContents(folderId: UUID) -> [Any] {
+        let subCats = getSubCategories(parentId: folderId)
+        let snips = getSnippets(in: folderId)
+        return subCats + snips
     }
     
     var activeProfile: Profile? { configurationManager.activeProfile }
@@ -40,6 +47,13 @@ final class SnippetRepository: ObservableObject {
         profile.bindings = []
         profile.updatedAt = Date()
         configurationManager.updateProfile(profile)
+    }
+    
+    func importData(snippets: [Snippet], categories: [SnippetCategory]) {
+        self.snippets = snippets
+        self.categories = categories
+        saveSnippets()
+        saveCategories()
     }
     
     func recordUsage(for snippet: Snippet) {
@@ -138,35 +152,21 @@ final class SnippetRepository: ObservableObject {
     
     private func loadSnippets() {
         let url = appSupport.appendingPathComponent("snippets.json")
-        guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([Snippet].self, from: data) else {
-            snippets = Snippet.samples; saveSnippets(); return
-        }
-        snippets = decoded
+        snippets = Persistence.load(from: url, fallback: Snippet.samples)
     }
     
     private func saveSnippets() {
         let url = appSupport.appendingPathComponent("snippets.json")
-        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted]
-        guard let data = try? encoder.encode(snippets) else { return }
-        try? data.write(to: url, options: .atomic)
+        Persistence.save(snippets, to: url, pretty: true)
     }
     
     private func loadCategories() {
         let url = appSupport.appendingPathComponent("categories.json")
-        guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([SnippetCategory].self, from: data) else {
-            categories = SnippetCategory.defaults; saveCategories(); return
-        }
-        categories = decoded
+        categories = Persistence.load(from: url, fallback: SnippetCategory.defaults)
     }
     
     private func saveCategories() {
         let url = appSupport.appendingPathComponent("categories.json")
-        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted]
-        guard let data = try? encoder.encode(categories) else { return }
-        try? data.write(to: url, options: .atomic)
+        Persistence.save(categories, to: url, pretty: true)
     }
 }

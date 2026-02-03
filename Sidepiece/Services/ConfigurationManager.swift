@@ -1,7 +1,10 @@
 import Foundation
+import SwiftUI
 
 /// Manages persistence of app configuration and profiles
+@MainActor
 final class ConfigurationManager: ObservableObject {
+    static let shared = ConfigurationManager()
     
     // MARK: - Published Properties
     
@@ -32,7 +35,15 @@ final class ConfigurationManager: ObservableObject {
     
     // MARK: - Initialisation
     
-    init() {
+    var activeProfileId: UUID? {
+        get { configuration.activeProfileId }
+        set {
+            self.configuration.activeProfileId = newValue
+            saveConfiguration()
+        }
+    }
+
+    private init() {
         // Load existing or create defaults
         self.configuration = AppConfiguration.default
         self.profiles = []
@@ -50,31 +61,34 @@ final class ConfigurationManager: ObservableObject {
         }
     }
     
+    // MARK: - Generic Binding Helper
+    
+    /// Generates a SwiftUI Binding that automatically persists changes to disk
+    func binding<T>(_ keyPath: WritableKeyPath<AppConfiguration, T>) -> Binding<T> {
+        Binding(
+            get: { self.configuration[keyPath: keyPath] },
+            set: { newValue in
+                var config = self.configuration
+                config[keyPath: keyPath] = newValue
+                self.configuration = config
+                self.saveConfiguration()
+            }
+        )
+    }
+
     // MARK: - Configuration
     
-    func updateConfiguration(_ config: AppConfiguration) {
-        configuration = config
+    func updateConfiguration(_ configuration: AppConfiguration) {
+        self.configuration = configuration
         saveConfiguration()
     }
     
     private func loadConfiguration() {
-        guard fileManager.fileExists(atPath: configurationFileURL.path) else { return }
-        
-        do {
-            let data = try Data(contentsOf: configurationFileURL)
-            configuration = try JSONDecoder().decode(AppConfiguration.self, from: data)
-        } catch {
-            print("Sidepiece: Failed to load configuration: \(error)")
-        }
+        configuration = Persistence.load(from: configurationFileURL, fallback: .default)
     }
     
     private func saveConfiguration() {
-        do {
-            let data = try JSONEncoder().encode(configuration)
-            try data.write(to: configurationFileURL, options: .atomic)
-        } catch {
-            print("Sidepiece: Failed to save configuration: \(error)")
-        }
+        Persistence.save(configuration, to: configurationFileURL)
     }
     
     // MARK: - Profiles
@@ -146,51 +160,37 @@ final class ConfigurationManager: ObservableObject {
     }
     
     private func loadProfiles() {
-        // Ensure profiles directory exists
         try? fileManager.createDirectory(at: profilesDirectoryURL, withIntermediateDirectories: true)
         
         guard let files = try? fileManager.contentsOfDirectory(at: profilesDirectoryURL, includingPropertiesForKeys: nil) else {
             return
         }
         
-        let jsonFiles = files.filter { $0.pathExtension == "json" }
-        
-        profiles = jsonFiles.compactMap { url -> Profile? in
-            do {
-                let data = try Data(contentsOf: url)
-                return try JSONDecoder().decode(Profile.self, from: data)
-            } catch {
-                print("Sidepiece: Failed to load profile at \(url): \(error)")
-                return nil
+        profiles = files.filter { $0.pathExtension == "json" }
+            .compactMap { url in
+                Persistence.load(from: url, silent: false)
             }
-        }
     }
     
     private func saveProfiles() {
-        // Ensure profiles directory exists
         try? fileManager.createDirectory(at: profilesDirectoryURL, withIntermediateDirectories: true)
         
         for profile in profiles {
-            let filename = "\(profile.id.uuidString).json"
-            let fileURL = profilesDirectoryURL.appendingPathComponent(filename)
-            
-            do {
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                let data = try encoder.encode(profile)
-                try data.write(to: fileURL, options: .atomic)
-            } catch {
-                print("Sidepiece: Failed to save profile '\(profile.name)': \(error)")
-            }
+            let url = profilesDirectoryURL.appendingPathComponent("\(profile.id.uuidString).json")
+            Persistence.save(profile, to: url, pretty: true)
         }
     }
     
     // MARK: - Import/Export
     
-    func exportConfiguration(to url: URL) throws {
-        let exportData = ExportData(
+    func exportUnifiedData(snippets: [Snippet], categories: [SnippetCategory], to url: URL) throws {
+        let exportData = UnifiedExportData(
             configuration: configuration,
-            profiles: profiles
+            profiles: profiles,
+            snippets: snippets,
+            categories: categories,
+            exportDate: Date(),
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         )
         
         let encoder = JSONEncoder()
@@ -199,21 +199,28 @@ final class ConfigurationManager: ObservableObject {
         try data.write(to: url, options: .atomic)
     }
     
-    func importConfiguration(from url: URL) throws {
+    func importUnifiedData(from url: URL) throws -> UnifiedExportData {
         let data = try Data(contentsOf: url)
-        let exportData = try JSONDecoder().decode(ExportData.self, from: data)
+        let exportData = try JSONDecoder().decode(UnifiedExportData.self, from: data)
         
-        configuration = exportData.configuration
-        profiles = exportData.profiles
+        // Update local state
+        self.configuration = exportData.configuration
+        self.profiles = exportData.profiles
         
         saveConfiguration()
         saveProfiles()
+        
+        return exportData
     }
 }
 
 // MARK: - Export Format
 
-private struct ExportData: Codable {
+struct UnifiedExportData: Codable {
     let configuration: AppConfiguration
     let profiles: [Profile]
+    let snippets: [Snippet]
+    let categories: [SnippetCategory]
+    let exportDate: Date
+    let appVersion: String
 }

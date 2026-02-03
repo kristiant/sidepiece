@@ -13,9 +13,34 @@ final class ClipboardService {
     /// - Parameter text: The text to copy
     /// - Returns: Whether the operation was successful
     @discardableResult
-    func copyText(_ text: String) -> Bool {
+    func copy(_ text: String) -> Bool {
         pasteboard.clearContents()
         return pasteboard.setString(text, forType: .string)
+    }
+    
+    /// Simulates Cmd+V to paste the current clipboard content
+    func paste() {
+        let source = CGEventSource(stateID: .hidSystemState)
+        
+        guard let vDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true) else { return } // 0x09 is 'V'
+        vDown.flags = .maskCommand
+        
+        guard let vUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false) else { return }
+        vUp.flags = .maskCommand
+        
+        vDown.post(tap: .cgAnnotatedSessionEventTap)
+        vUp.post(tap: .cgAnnotatedSessionEventTap)
+    }
+    
+    /// Simulates pressing the Enter key
+    func typeEnter() {
+        let source = CGEventSource(stateID: .hidSystemState)
+        
+        guard let enterDown = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: true) else { return } // 0x24 is Return
+        guard let enterUp = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: false) else { return }
+        
+        enterDown.post(tap: .cgAnnotatedSessionEventTap)
+        enterUp.post(tap: .cgAnnotatedSessionEventTap)
     }
     
     /// Copies rich text (attributed string) to the clipboard

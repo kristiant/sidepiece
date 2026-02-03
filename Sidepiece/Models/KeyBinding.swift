@@ -4,16 +4,16 @@ import Foundation
 struct KeyBinding: Identifiable, Codable, Equatable {
     
     enum Action: Codable, Equatable {
-        case snippet(Snippet)
-        case folder(UUID)
-        case switchProfile(UUID)
+        case snippet(id: UUID)
+        case folder(id: UUID)
+        case switchProfile(id: UUID)
         case cycleProfile(direction: CycleDirection)
         case appFunction(AppFunction)
         
         var displayName: String {
             switch self {
-            case .snippet(let snippet):
-                return snippet.title
+            case .snippet:
+                return "Snippet"
             case .folder:
                 return "Folder"
             case .switchProfile:
@@ -88,7 +88,7 @@ struct KeyBinding: Identifiable, Codable, Equatable {
         if let action = try? container.decode(Action.self, forKey: .action) {
             self.action = action
         } else if let snippet = try? container.decode(Snippet.self, forKey: .snippet) {
-            self.action = .snippet(snippet)
+            self.action = .snippet(id: snippet.id)
         } else {
             // Default to empty if somehow both missing (should not happen normally)
             throw DecodingError.dataCorruptedError(forKey: .action, in: container, debugDescription: "Missing action or snippet data")
@@ -113,6 +113,6 @@ struct KeyBinding: Identifiable, Codable, Equatable {
 // MARK: - Helper for legacy constructors
 extension KeyBinding {
     init(key: NumpadKey, snippet: Snippet) {
-        self.init(key: key, action: .snippet(snippet))
+        self.init(key: key, action: .snippet(id: snippet.id))
     }
 }

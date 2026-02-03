@@ -1,6 +1,7 @@
 import SwiftUI
 
 @main
+@MainActor
 struct SidepieceApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
