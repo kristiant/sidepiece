@@ -1,26 +1,26 @@
 import SwiftUI
 
 struct FloatingHUDView: View {
-    @ObservedObject var viewModel: HUDViewModel
+    @ObservedObject var hudManager: HUDManager = .shared
     
     private var isIdle: Bool {
-        viewModel.activeFolderName == nil && viewModel.feedbackMessage == nil
+        hudManager.activeFolderName == nil && hudManager.feedbackMessage == nil
     }
     
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            if viewModel.isPeaking {
+            if hudManager.isPeaking {
                 peakView.transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
             ZStack {
-                if isIdle && !viewModel.isPeaking {
+                if isIdle && !hudManager.isPeaking {
                     Circle().fill(Color.primary.opacity(0.8)).frame(width: 4, height: 4)
-                } else if !viewModel.isPeaking {
+                } else if !hudManager.isPeaking {
                     statusContent
                 }
             }
-            .padding(.horizontal, isIdle && !viewModel.isPeaking ? 6 : 10)
+            .padding(.horizontal, isIdle && !hudManager.isPeaking ? 6 : 10)
             .padding(.vertical, 6)
             .background(VisualEffectView(material: .hudWindow, blendingMode: .withinWindow).clipShape(Capsule()))
             .overlay(Capsule().stroke(.white.opacity(0.1), lineWidth: 0.5))
@@ -28,12 +28,12 @@ struct FloatingHUDView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .padding(12)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isIdle || viewModel.isPeaking)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isIdle || hudManager.isPeaking)
     }
     
     private var statusContent: some View {
         HStack(spacing: 6) {
-            if let folder = viewModel.activeFolderName {
+            if let folder = hudManager.activeFolderName {
                 Label(folder, systemImage: "folder.fill")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .padding(.horizontal, 6)
@@ -42,7 +42,7 @@ struct FloatingHUDView: View {
                     .cornerRadius(4)
             }
             
-            if let feedback = viewModel.feedbackMessage, let icon = viewModel.feedbackIcon {
+            if let feedback = hudManager.feedbackMessage, let icon = hudManager.feedbackIcon {
                 Label(feedback, systemImage: icon)
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundColor(.green.opacity(0.9))
@@ -52,7 +52,7 @@ struct FloatingHUDView: View {
     
     private var peakView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let folder = viewModel.activeFolderName {
+            if let folder = hudManager.activeFolderName {
                 HStack(spacing: 6) {
                     Image(systemName: "folder.fill")
                     Text(folder.uppercased())
@@ -63,7 +63,7 @@ struct FloatingHUDView: View {
             }
             
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 85))], spacing: 4) {
-                ForEach(viewModel.peakingAssignments, id: \.key) { item in
+                ForEach(hudManager.peakingAssignments, id: \.key) { item in
                     HStack(spacing: 4) {
                         Text(item.key)
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
@@ -110,11 +110,13 @@ struct VisualEffectView: NSViewRepresentable {
 }
 
 #Preview {
-    let vm = HUDViewModel()
-    vm.activeFolderName = "Projects"
-    vm.feedbackMessage = "Copied: Email Signature"
-    vm.feedbackIcon = "doc.on.doc.fill"
-    vm.isVisible = true
-    return FloatingHUDView(viewModel: vm)
-        .padding()
+    FloatingHUDView(hudManager: {
+        let vm = HUDManager.shared
+        vm.activeFolderName = "Projects"
+        vm.feedbackMessage = "Copied: Email Signature"
+        vm.feedbackIcon = "doc.on.doc.fill"
+        vm.isVisible = true
+        return vm
+    }())
+    .padding()
 }

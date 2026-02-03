@@ -3,7 +3,7 @@ import SwiftUI
 
 class HUDWindowController: NSWindowController {
     
-    init(viewModel: HUDViewModel) {
+    init(hudManager: HUDManager) {
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 600),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -20,7 +20,7 @@ class HUDWindowController: NSWindowController {
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
         
-        let contentView = NSHostingView(rootView: FloatingHUDView(viewModel: viewModel))
+        let contentView = NSHostingView(rootView: FloatingHUDView(hudManager: hudManager))
         panel.contentView = contentView
         
         super.init(window: panel)

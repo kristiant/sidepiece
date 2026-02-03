@@ -1,8 +1,11 @@
 import SwiftUI
 import Combine
 
-class HUDViewModel: ObservableObject {
-    @Published var folderStore: [String] = [] // For breadcrumbs if needed
+@MainActor
+final class HUDManager: ObservableObject {
+    static let shared = HUDManager()
+    
+    @Published var folderStore: [String] = [] 
     @Published var activeFolderName: String? = nil
     @Published var feedbackMessage: String? = nil
     @Published var feedbackIcon: String? = nil
@@ -10,16 +13,18 @@ class HUDViewModel: ObservableObject {
     @Published var isPeaking: Bool = false
     @Published var peakingAssignments: [(key: String, label: String)] = []
     
+    private init() {}
+    
     private var dismissTimer: Timer?
     private var peakTimer: Timer?
     
     func peak(assignments: [(key: String, label: String)]) {
         peakingAssignments = assignments
-        withAnimation(.spring(response: 0.3)) { isPeaking = true }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { isPeaking = true }
         
         peakTimer?.invalidate()
         peakTimer = .scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
-            withAnimation(.spring()) { self?.isPeaking = false }
+            Task { @MainActor in self?.dismissPeak() }
         }
     }
     
