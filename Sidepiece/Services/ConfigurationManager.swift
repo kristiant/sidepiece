@@ -167,8 +167,8 @@ final class ConfigurationManager: ObservableObject {
         }
         
         profiles = files.filter { $0.pathExtension == "json" }
-            .compactMap { url in
-                Persistence.load(from: url, silent: false)
+            .compactMap { url -> Profile? in
+                Persistence.load(from: url, fallback: nil, silent: false)
             }
     }
     
