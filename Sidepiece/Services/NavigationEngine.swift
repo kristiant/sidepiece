@@ -5,35 +5,59 @@ import SwiftUI
 @MainActor
 final class NavigationEngine: ObservableObject {
     static let shared = NavigationEngine()
-    
-    @Published private(set) var currentFolderId: UUID? = nil
-    
+
+    /// Full path from root to the current folder.
+    @Published private(set) var folderStack: [(id: UUID, name: String)] = []
+
+    /// Convenience: the ID of the deepest active folder, or nil at root.
+    var currentFolderId: UUID? { folderStack.last?.id }
+
     private var folderModeTimer: Timer?
-    private let autoExitInterval: TimeInterval = 5.0
-    
     private init() {}
-    
-    func enterFolder(_ folderId: UUID) {
-        currentFolderId = folderId
+
+    // MARK: - Navigation
+
+    func enterFolder(_ folderId: UUID, name: String) {
+        folderStack.append((id: folderId, name: name))
         resetTimer()
     }
-    
+
+    /// Pop one level up. Invalidates timer if we've returned to root.
+    func popFolder() {
+        guard !folderStack.isEmpty else { return }
+        folderStack.removeLast()
+        folderStack.isEmpty ? invalidateTimer() : resetTimer()
+    }
+
+    /// Navigate to a specific stack depth. depth == -1 means root.
+    func navigateTo(depth: Int) {
+        if depth < 0 {
+            folderStack.removeAll()
+            invalidateTimer()
+        } else {
+            folderStack = Array(folderStack.prefix(depth + 1))
+            resetTimer()
+        }
+    }
+
+    /// Exit all folders (used by auto-exit timer and post-snippet autoExit).
     func exitFolder() {
         invalidateTimer()
-        currentFolderId = nil
+        folderStack.removeAll()
     }
-    
+
+    // MARK: - Timer
+
     func resetTimer() {
         invalidateTimer()
-        folderModeTimer = Timer.scheduledTimer(withTimeInterval: autoExitInterval, repeats: false) { [weak self] _ in
+        folderModeTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.exitFolder()
-                // Post notification for local feedback if needed
                 NotificationCenter.default.post(name: .didAutoExitFolder, object: nil)
             }
         }
     }
-    
+
     func invalidateTimer() {
         folderModeTimer?.invalidate()
         folderModeTimer = nil
