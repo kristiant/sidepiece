@@ -26,6 +26,7 @@ struct KeyBindingConfigView: View {
                 footer
             }
             .frame(width: 380, height: 520)
+            .background(Color.spBackground)
             .navigationDestination(for: String.self) { destination in
                 if destination == "settings" {
                     SettingsView(
@@ -59,7 +60,7 @@ struct KeyBindingConfigView: View {
                     .font(.headline)
                 Text("Configure your shortcuts")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.spMuted)
             }
             
             Spacer()
@@ -93,7 +94,7 @@ struct KeyBindingConfigView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.secondary.opacity(0.15))
+            .background(Color.spPanelElevated)
             .cornerRadius(6)
         }
         .buttonStyle(.plain)
@@ -173,17 +174,17 @@ struct KeyBindingConfigView: View {
                 }
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
-                .background(Color.secondary.opacity(0.1))
+                .background(Color.spPanelElevated)
                 .cornerRadius(4)
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(Color.spMuted)
             
             Button(action: quitApp) {
                 Label("Quit", systemImage: "power")
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(Color.spMuted)
         }
         .font(.caption)
         .padding()

@@ -1,47 +1,39 @@
 import AppKit
 import SwiftUI
 
-class HUDWindowController: NSWindowController {
-    
+final class HUDWindowController: NSWindowController {
+
     init(hudManager: HUDManager) {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 600),
+            contentRect: .init(x: 0, y: 0, width: 300, height: 600),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
-        
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.level = .mainMenu
         panel.hasShadow = false
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
-        
-        let contentView = NSHostingView(rootView: FloatingHUDView(hudManager: hudManager))
-        panel.contentView = contentView
-        
+        let hudView = FloatingHUDView(hudManager: hudManager)
+            .tint(Color.spAccent)
+            .preferredColorScheme(.dark)
+        panel.contentView = NSHostingView(rootView: hudView)
+
         super.init(window: panel)
         updatePosition()
     }
-    
-    required init?(coder: NSCoder) { fatalError() }
-    
+
+    required init?(coder: NSCoder) { fatalError("use init(hudManager:)") }
+
     func updatePosition() {
         guard let screen = NSScreen.main else { return }
-        let screenRect = screen.visibleFrame
-        let padding: CGFloat = 24
-        
-        // Window is 300x600, positioned at bottom right
-        let x = screenRect.maxX - 300 - padding
-        let y = screenRect.minY + padding
-        
-        window?.setFrame(NSRect(x: x, y: y, width: 300, height: 600), display: true)
+        let f = screen.visibleFrame
+        window?.setFrame(.init(x: f.maxX - 324, y: f.minY + 24, width: 300, height: 600), display: true)
     }
-    
-    func show() {
-        window?.orderFrontRegardless()
-    }
+
+    func show() { window?.orderFrontRegardless() }
 }

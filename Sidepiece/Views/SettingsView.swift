@@ -23,6 +23,7 @@ struct SettingsView: View {
                 .frame(maxHeight: .infinity)
         }
         .frame(width: 400, height: 500)
+        .background(Color.spBackground)
     }
     
     @ViewBuilder
@@ -150,7 +151,7 @@ struct CategoryRow: View {
                 
                 Button(action: { snippetRepository.deleteCategory(category.id) }) {
                     Image(systemName: "trash")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
                 .buttonStyle(.plain)
             }
@@ -188,11 +189,11 @@ struct ProfilesSettingsView: View {
                             }
                         }
                     }
-                    .background(Color.primary.opacity(0.03))
+                    .background(Color.spPanelElevated)
                     .cornerRadius(8)
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
                 
                 // Create New Section
@@ -214,7 +215,7 @@ struct ProfilesSettingsView: View {
                     }
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
             }
             .padding()
@@ -231,9 +232,10 @@ struct ProfilesSettingsView: View {
                 } else {
                     Text(profile.name)
                         .fontWeight(profile.isActive ? .bold : .regular)
+                        .foregroundColor(Color.spText)
                     Text("\(profile.bindings.count) keys bound")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
             }
             
@@ -250,10 +252,10 @@ struct ProfilesSettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .font(.caption)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.accentColor.opacity(0.9))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.1))
+                    .background(Color.accentColor.opacity(0.12))
                     .cornerRadius(4)
                 } else {
                     Image(systemName: "checkmark.circle.fill")
@@ -271,7 +273,7 @@ struct ProfilesSettingsView: View {
                     .disabled(configurationManager.profiles.count <= 1)
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .padding(4)
                 }
                 .menuStyle(.borderlessButton)
@@ -342,7 +344,7 @@ struct GeneralSettingsView: View {
                     ))
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -398,10 +400,10 @@ struct GeneralSettingsView: View {
                     
                     Text("Automatically return to root after 5s of inactivity, or peek contents when entering.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -415,7 +417,7 @@ struct GeneralSettingsView: View {
                     }
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -437,7 +439,7 @@ struct GeneralSettingsView: View {
                     
                     Text("Backup or restore all profiles, snippets, and app settings to a JSON file.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                     
                     Divider()
                         .padding(.vertical, 8)
@@ -450,17 +452,17 @@ struct GeneralSettingsView: View {
                             Text("Clear all key bindings")
                             Spacer()
                         }
-                        .foregroundColor(.red.opacity(0.8))
+                        .foregroundColor(.red.opacity(0.85))
                         .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
                     
                     Text("This will remove all snippets assigned to keys in the active profile.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanel)
                 .cornerRadius(12)
             }
             .padding()
@@ -571,7 +573,7 @@ struct AccessibilityStatusView: View {
                 }) {
                     Text("App not in list? Click to show in Finder, then drag it in.")
                         .font(.system(size: 9))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .underline()
                 }
                 .buttonStyle(.plain)

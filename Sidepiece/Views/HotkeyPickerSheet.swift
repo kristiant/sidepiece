@@ -18,6 +18,7 @@ struct HotkeyPickerSheet: View {
             footer
         }
         .frame(width: 380, height: 480)
+        .background(Color.spBackground)
     }
     
     private var header: some View {
@@ -26,7 +27,7 @@ struct HotkeyPickerSheet: View {
                 .font(.headline)
             Text(snippet.title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.spMuted)
         }
         .padding()
     }
@@ -39,8 +40,8 @@ struct HotkeyPickerSheet: View {
                         .font(.caption)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(selectedCategory == category ? Color.accentColor : Color.secondary.opacity(0.1))
-                        .foregroundColor(selectedCategory == category ? .white : .primary)
+                        .background(selectedCategory == category ? Color.accentColor : Color.spPanelElevated)
+                        .foregroundColor(selectedCategory == category ? .white : Color.spText)
                         .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
@@ -93,7 +94,7 @@ struct KeyShortcutCell: View {
                 if let binding = existingBinding {
                     Text(bindingTitle(binding))
                         .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .lineLimit(1)
                 } else {
                     Text("Available")
@@ -103,7 +104,7 @@ struct KeyShortcutCell: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(Color.secondary.opacity(0.1))
+            .background(Color.spPanel)
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

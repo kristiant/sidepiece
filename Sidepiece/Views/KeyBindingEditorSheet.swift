@@ -106,6 +106,7 @@ struct KeyBindingEditorSheet: View {
             sheetFooter
         }
         .frame(width: 420, height: 520)
+        .background(Color.spBackground)
         .onAppear {
             if let binding = binding {
                 switch binding.action {
@@ -145,7 +146,7 @@ struct KeyBindingEditorSheet: View {
             Spacer()
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.spMuted)
             }
             .buttonStyle(.plain)
         }
@@ -168,13 +169,13 @@ struct KeyBindingEditorSheet: View {
                         .fontWeight(.medium)
                     Text("Category: \(key.category.rawValue)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
             }
             Spacer()
         }
         .padding()
-        .background(Color.secondary.opacity(0.1))
+        .background(Color.spPanel)
         .cornerRadius(10)
     }
     
@@ -196,7 +197,7 @@ struct KeyBindingEditorSheet: View {
                     Spacer()
                     Text("\(snippetContent.count) chars")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
                 
                 TextEditor(text: $snippetContent)
@@ -207,7 +208,7 @@ struct KeyBindingEditorSheet: View {
                     .cornerRadius(8)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.3), lineWidth: 1)
+                            .strokeBorder(Color.spPanelElevated, lineWidth: 1)
                     )
             }
             
@@ -240,7 +241,7 @@ struct KeyBindingEditorSheet: View {
                             .fontWeight(.medium)
                         Text(snippet.preview)
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.spMuted)
                     }
                     Spacer()
                     if selectedSnippet?.id == snippet.id {
@@ -254,7 +255,7 @@ struct KeyBindingEditorSheet: View {
                 }
             }
             .frame(height: 200)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color.spPanel)
             .cornerRadius(8)
         }
     }
@@ -276,12 +277,12 @@ struct KeyBindingEditorSheet: View {
                 }
             }
             .frame(height: 200)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color.spPanel)
             .cornerRadius(8)
             
             Text("Pressing this key will open this folder on your numpad. Press 0 or Clear to go back.")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.spMuted)
         }
     }
     
@@ -311,7 +312,7 @@ struct KeyBindingEditorSheet: View {
                     
                     Text("Pressing this key will immediately switch Sidepiece to using this profile.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
@@ -327,7 +328,7 @@ struct KeyBindingEditorSheet: View {
                     
                     Text("Each press will move to the next or previous profile in your list.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                 }
             }
         }
@@ -348,7 +349,7 @@ struct KeyBindingEditorSheet: View {
             
             Text("Assigning an app function allows you to trigger special actions directly from your numpad.")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.spMuted)
         }
     }
     

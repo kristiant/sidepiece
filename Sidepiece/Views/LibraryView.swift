@@ -112,14 +112,14 @@ struct LibraryView: View {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.spMuted)
                 TextField("Search...", text: $searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 11, weight: .medium))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color.spPanelElevated)
             .cornerRadius(6)
             
             Button(action: { isShowingCreateSnippet = true }) {
@@ -181,7 +181,7 @@ struct LibraryView: View {
                 if (currentFolder == nil ? rootCategories : subCategories).isEmpty && localSnippets.isEmpty {
                     Text("No contents")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .padding(.leading, 12)
                         .padding(.top, 20)
                 }
@@ -240,7 +240,7 @@ struct LibraryView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "doc.text.magnifyingglass")
                             .font(.title2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.spMuted)
                         
                         let emptyMsg: String = {
                             if !searchText.isEmpty {
@@ -251,7 +251,7 @@ struct LibraryView: View {
                         
                         Text(emptyMsg)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.spMuted)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -268,7 +268,7 @@ struct LibraryView: View {
     private func sectionHeader(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 8, weight: .bold, design: .monospaced))
-            .foregroundColor(.secondary.opacity(0.3))
+            .foregroundColor(Color.spMuted.opacity(0.5))
             .padding(.horizontal, 10)
     }
     
@@ -337,6 +337,7 @@ struct LibraryView: View {
         }
         .padding()
         .frame(width: 300)
+        .background(Color.spBackground)
     }
 }
 
@@ -354,8 +355,12 @@ struct BreadcrumbItem: View {
                 .font(.system(size: 11, weight: isBold ? .bold : .medium))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(isTargeted ? Color.accentColor.opacity(0.15) : (isBold ? Color.accentColor.opacity(0.05) : Color.clear))
-                .foregroundColor(isBold ? .primary : .secondary)
+                .background(
+                    isTargeted ? Color.accentColor.opacity(0.15)
+                    : isBold ? Color.accentColor.opacity(0.08)
+                    : Color.spPanelElevated.opacity(0.4)
+                )
+                .foregroundColor(isBold ? Color.spText : Color.spMuted)
                 .cornerRadius(6)
         }
         .buttonStyle(.plain)
@@ -383,22 +388,23 @@ struct FolderRow: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(category.name)
                     .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color.spText)
                 
                 let count = repository.getSnippets(in: category.id).count
                 Text("\(count) \(count == 1 ? "snippet" : "snippets")")
                     .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.spMuted)
             }
             
             Spacer()
             
             Image(systemName: "chevron.right")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.secondary.opacity(0.5))
+                .foregroundColor(Color.spMuted.opacity(0.6))
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 10)
-        .background(isTargeted ? Color.green.opacity(0.1) : (isHovered ? Color.accentColor.opacity(0.08) : Color.clear))
+        .background(isTargeted ? Color.spDropTarget : (isHovered ? Color.accentColor.opacity(0.1) : Color.clear))
         .cornerRadius(10)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
@@ -422,9 +428,9 @@ struct SnippetLibraryRow: View {
         HStack(spacing: 12) {
             Image(systemName: "doc.text")
                 .font(.system(size: 14))
-                .foregroundColor(.secondary.opacity(0.8))
+                .foregroundColor(Color.spMuted)
                 .frame(width: 32, height: 32)
-                .background(Color.secondary.opacity(0.05))
+                .background(Color.spPanelElevated)
                 .cornerRadius(8)
             
             VStack(alignment: .leading, spacing: 1) {
@@ -445,7 +451,7 @@ struct SnippetLibraryRow: View {
                     
                     Text(snippet.preview)
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .lineLimit(1)
                 }
             }
@@ -492,8 +498,9 @@ struct AppFunctionRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: function.icon).font(.system(size: 10)).foregroundColor(.accentColor)
-                .frame(width: 24, height: 24).background(Color.accentColor.opacity(0.1)).cornerRadius(6)
+                .frame(width: 24, height: 24).background(Color.accentColor.opacity(0.12)).cornerRadius(6)
             Text(function.displayName.uppercased()).font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(Color.spText)
             Spacer()
         }
         .padding(.vertical, 4).padding(.horizontal, 8)
@@ -519,14 +526,14 @@ struct SnippetEditorSheet: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("EDIT SNIP").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(.secondary)
+            Text("EDIT SNIP").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(Color.spMuted)
             
             TextField("TITLE", text: $title).textFieldStyle(.plain)
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .padding(8).background(Color.secondary.opacity(0.05)).cornerRadius(6)
+                .padding(8).background(Color.spPanelElevated).cornerRadius(6)
             
             TextEditor(text: $content).font(.system(size: 11, design: .monospaced))
-                .frame(height: 120).padding(4).background(Color.secondary.opacity(0.03)).cornerRadius(6)
+                .frame(height: 120).padding(4).background(Color.spPanel).cornerRadius(6)
             
             HStack {
                 Button("CANCEL") { dismiss() }.font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -544,5 +551,6 @@ struct SnippetEditorSheet: View {
             }
         }
         .padding(16).frame(width: 380)
+        .background(Color.spBackground)
     }
 }

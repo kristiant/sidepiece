@@ -36,11 +36,13 @@ struct MenuBarPopoverView: View {
             footer
         }
         .frame(width: 950, height: 650)
+        .background(Color.spBackground)
         .sheet(isPresented: $showingSettings) {
             SettingsView(
                 configurationManager: configurationManager,
                 snippetRepository: snippetRepository
             )
+            .background(Color.spBackground)
         }
     }
     
@@ -53,7 +55,7 @@ struct MenuBarPopoverView: View {
                     Text("Hot Keys")
                 }
                 .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.accentColor)
+                .foregroundColor(Color.spText)
                 
                 Spacer()
                 
@@ -70,10 +72,10 @@ struct MenuBarPopoverView: View {
                 }
                 .font(.system(size: 10, weight: .bold))
                 .buttonStyle(.plain)
-                .foregroundColor(.red.opacity(0.8))
+                .foregroundColor(.red.opacity(0.85))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.red.opacity(0.1))
+                .background(Color.red.opacity(0.12))
                 .cornerRadius(4)
             }
             .frame(width: 350)
@@ -88,14 +90,14 @@ struct MenuBarPopoverView: View {
                     Text("Library")
                 }
                 .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.accentColor)
+                .foregroundColor(Color.spText)
                 
                 Spacer()
             }
             .padding(.horizontal, 16)
         }
         .frame(height: 50)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.spBackground)
     }
     
     private var tabs: some View {
@@ -168,7 +170,7 @@ struct MenuBarPopoverView: View {
                 Label("Settings", systemImage: "gear")
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(Color.spMuted)
             
             Spacer()
             
@@ -176,7 +178,7 @@ struct MenuBarPopoverView: View {
                 Label("Quit", systemImage: "power")
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(Color.spMuted)
         }
         .font(.caption)
         .padding()

@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover?.contentSize = NSSize(width: 950, height: 650)
         popover?.behavior = .transient
         popover?.animates = true
+        popover?.appearance = NSAppearance(named: .darkAqua)
         
         let contentView = MenuBarPopoverView(
             snippetRepository: snippetRepo,
@@ -51,7 +52,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.closePopover()
             }
         )
-        popover?.contentViewController = NSHostingController(rootView: contentView)
+        // Inject accent + dark scheme so Color.accentColor → #4B58F1 everywhere,
+        // independent of the user's system accent colour preference.
+        let rootView = contentView
+            .tint(Color.spAccent)
+            .preferredColorScheme(.dark)
+            .background(Color.spBackground)
+        let hostingController = NSHostingController(rootView: rootView)
+        // Force dark appearance — prevents the system popover material from showing through.
+        hostingController.view.appearance = NSAppearance(named: .darkAqua)
+        popover?.contentViewController = hostingController
     }
     
     private func setupStatusBar() {

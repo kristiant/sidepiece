@@ -27,8 +27,8 @@ struct CategoryTab: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(isSelected ? Color.accentColor : Color.clear)
-            .foregroundColor(isSelected ? .white : .primary)
+            .background(isSelected ? Color.accentColor : Color.spPanelElevated)
+            .foregroundColor(isSelected ? .white : Color.spText)
             .cornerRadius(8)
         }
         .buttonStyle(.plain)
@@ -92,11 +92,11 @@ struct KeyCell: View {
     private var keyBadge: some View {
         Text(key.symbol)
             .font(.system(.body, design: .rounded, weight: .bold))
-            .foregroundColor(hasBinding ? .white : .primary)
+            .foregroundColor(hasBinding ? .white : Color.spText)
             .frame(width: 36, height: 32)
-            .background(hasBinding ? (isTargeted ? Color.green : Color.accentColor) : Color.secondary.opacity(0.15))
+            .background(hasBinding ? (isTargeted ? Color.green : Color.accentColor) : Color.spPanelElevated)
             .cornerRadius(8)
-            .shadow(color: hasBinding ? Color.accentColor.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+            .shadow(color: hasBinding ? Color.accentColor.opacity(0.35) : Color.clear, radius: 5, x: 0, y: 2)
     }
     
     private var actionLabel: some View {
@@ -111,17 +111,17 @@ struct KeyCell: View {
                     Text(actionName(for: binding.action))
                         .font(.system(size: 10, weight: .semibold))
                         .lineLimit(1)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.spText)
                     
                     Text(binding.action.displayName)
                         .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.spMuted)
                         .lineLimit(1)
                 }
             } else {
                 Text("—")
                     .font(.caption2)
-                    .foregroundColor(.secondary.opacity(0.5))
+                    .foregroundColor(Color.spMuted.opacity(0.5))
             }
         }
         .frame(maxWidth: .infinity)
@@ -172,12 +172,12 @@ struct KeyCell: View {
     
     private var cellBackground: Color {
         if isTargeted {
-            return Color.green.opacity(0.1)
+            return Color.spDropTarget
         }
         if isHovered {
-            return Color.accentColor.opacity(0.1)
+            return Color.accentColor.opacity(0.12)
         }
-        return hasBinding ? Color.accentColor.opacity(0.05) : Color.secondary.opacity(0.05)
+        return hasBinding ? Color.accentColor.opacity(0.07) : Color.spPanel
     }
     
     private var borderColor: Color {
@@ -187,6 +187,6 @@ struct KeyCell: View {
         if isSelected {
             return Color.accentColor
         }
-        return hasBinding ? Color.accentColor.opacity(0.3) : Color.secondary.opacity(0.2)
+        return hasBinding ? Color.accentColor.opacity(0.4) : Color.spPanelElevated
     }
 }
