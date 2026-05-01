@@ -53,7 +53,7 @@ struct KeyBindingConfigView: View {
         HStack(spacing: 12) {
             Image(systemName: "keyboard")
                 .font(.title2)
-                .foregroundColor(.accentColor)
+                .foregroundColor(Color.spAccent)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Sidepiece")

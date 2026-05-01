@@ -160,7 +160,7 @@ struct KeyBindingEditorSheet: View {
                     .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundColor(.white)
                     .frame(width: 50, height: 44)
-                    .background(Color.accentColor)
+                    .background(Color.spAccent)
                     .cornerRadius(10)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -246,7 +246,7 @@ struct KeyBindingEditorSheet: View {
                     Spacer()
                     if selectedSnippet?.id == snippet.id {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(Color.spAccent)
                     }
                 }
                 .contentShape(Rectangle())
@@ -457,7 +457,7 @@ struct HierarchicalCategoryRow: View {
                 
                 if selectedId == category.id {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color.spAccent)
                 }
             }
             .contentShape(Rectangle())

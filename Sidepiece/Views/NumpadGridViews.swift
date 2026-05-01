@@ -18,16 +18,17 @@ struct CategoryTab: View {
                 if bindingCount > 0 {
                     Text("\(bindingCount)")
                         .font(.caption2)
-                        .fontWeight(.medium)
+                        .fontWeight(.bold)
+                        .foregroundColor(isSelected ? Color.spAccent : Color.spMuted)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(isSelected ? Color.white.opacity(0.3) : Color.accentColor.opacity(0.2))
+                        .background(isSelected ? Color.white.opacity(0.25) : Color.spBackground)
                         .cornerRadius(4)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(isSelected ? Color.accentColor : Color.spPanelElevated)
+            .background(isSelected ? Color.spAccent : Color.spPanelElevated)
             .foregroundColor(isSelected ? .white : Color.spText)
             .cornerRadius(8)
         }
@@ -94,9 +95,9 @@ struct KeyCell: View {
             .font(.system(.body, design: .rounded, weight: .bold))
             .foregroundColor(hasBinding ? .white : Color.spText)
             .frame(width: 36, height: 32)
-            .background(hasBinding ? (isTargeted ? Color.green : Color.accentColor) : Color.spPanelElevated)
+            .background(hasBinding ? (isTargeted ? Color.green : Color.spAccent) : Color.spPanelElevated)
             .cornerRadius(8)
-            .shadow(color: hasBinding ? Color.accentColor.opacity(0.35) : Color.clear, radius: 5, x: 0, y: 2)
+            .shadow(color: hasBinding ? Color.spAccent.opacity(0.35) : Color.clear, radius: 5, x: 0, y: 2)
     }
     
     private var actionLabel: some View {
@@ -175,9 +176,9 @@ struct KeyCell: View {
             return Color.spDropTarget
         }
         if isHovered {
-            return Color.accentColor.opacity(0.12)
+            return Color.spAccent.opacity(0.12)
         }
-        return hasBinding ? Color.accentColor.opacity(0.07) : Color.spPanel
+        return hasBinding ? Color.spAccent.opacity(0.07) : Color.spPanel
     }
     
     private var borderColor: Color {
@@ -185,8 +186,8 @@ struct KeyCell: View {
             return Color.green
         }
         if isSelected {
-            return Color.accentColor
+            return Color.spAccent
         }
-        return hasBinding ? Color.accentColor.opacity(0.4) : Color.spPanelElevated
+        return hasBinding ? Color.spAccent.opacity(0.4) : Color.spPanelElevated
     }
 }

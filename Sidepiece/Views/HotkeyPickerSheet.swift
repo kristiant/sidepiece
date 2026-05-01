@@ -40,7 +40,7 @@ struct HotkeyPickerSheet: View {
                         .font(.caption)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(selectedCategory == category ? Color.accentColor : Color.spPanelElevated)
+                        .background(selectedCategory == category ? Color.spAccent : Color.spPanelElevated)
                         .foregroundColor(selectedCategory == category ? .white : Color.spText)
                         .cornerRadius(6)
                 }
@@ -108,7 +108,7 @@ struct KeyShortcutCell: View {
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(existingBinding != nil ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(existingBinding != nil ? Color.spAccent.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

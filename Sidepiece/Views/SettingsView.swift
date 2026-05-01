@@ -49,7 +49,7 @@ struct SettingsView: View {
                         Image(systemName: "chevron.left")
                         Text("Back")
                     }
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.spAccent)
                 }
                 .buttonStyle(.plain)
                 
@@ -210,7 +210,7 @@ struct ProfilesSettingsView: View {
                                 .font(.title3)
                         }
                         .buttonStyle(.plain)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color.spAccent)
                         .disabled(newProfileName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
@@ -244,7 +244,7 @@ struct ProfilesSettingsView: View {
             if editingProfile?.id == profile.id {
                 Button("Save") { saveProfileName() }
                     .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.spAccent)
             } else {
                 if !profile.isActive {
                     Button("Activate") {
@@ -252,10 +252,10 @@ struct ProfilesSettingsView: View {
                     }
                     .buttonStyle(.plain)
                     .font(.caption)
-                    .foregroundColor(Color.accentColor.opacity(0.9))
+                    .foregroundColor(Color.spAccent.opacity(0.9))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.12))
+                    .background(Color.spAccent.opacity(0.12))
                     .cornerRadius(4)
                 } else {
                     Image(systemName: "checkmark.circle.fill")
