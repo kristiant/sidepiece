@@ -7,19 +7,15 @@ struct MenuBarPopoverView: View {
     let onSnippetSelected: (Snippet) -> Void
     let onAppFunctionSelected: (KeyBinding.AppFunction) -> Void
     
-    @State private var selectedCategory: NumpadKey.Category = .numbers
     @State private var showingSettings = false
     
     var body: some View {
         VStack(spacing: 0) {
-            header
-            Divider()
-            
             HStack(spacing: 0) {
                 VStack(spacing: 0) {
-                    tabs
+                    keysHeader
                     Divider()
-                    grid
+                    allKeysGrid
                 }
                 .frame(width: 350)
                 
@@ -46,88 +42,59 @@ struct MenuBarPopoverView: View {
         }
     }
     
-    private var header: some View {
-        HStack(spacing: 0) {
-            // Hotkeys Header
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "keyboard")
-                    Text("Hot Keys")
-                }
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(Color.spText)
-                
-                Spacer()
-                
-                Button("Clear All") {
-                    let alert = NSAlert()
-                    alert.messageText = "Clear all hotkeys?"
-                    alert.informativeText = "Reset all assignments for the current profile."
-                    alert.addButton(withTitle: "Clear")
-                    alert.addButton(withTitle: "Cancel")
-                    alert.alertStyle = .warning
-                    if alert.runModal() == .alertFirstButtonReturn {
-                        configurationManager.clearAllBindings()
-                    }
-                }
-                .font(.system(size: 10, weight: .bold))
-                .buttonStyle(.plain)
-                .foregroundColor(.red.opacity(0.85))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.red.opacity(0.12))
-                .cornerRadius(4)
+    private var keysHeader: some View {
+        HStack {
+            HStack(spacing: 6) {
+                Image(systemName: "keyboard")
+                Text("Hot Keys")
             }
-            .frame(width: 350)
-            .padding(.horizontal, 16)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(Color.spText)
             
-            Divider()
+            Spacer()
             
-            // Library Header
-            HStack(spacing: 12) {
-                HStack(spacing: 6) {
-                    Image(systemName: "folder.fill")
-                    Text("Library")
+            Button("Clear All") {
+                let alert = NSAlert()
+                alert.messageText = "Clear all hotkeys?"
+                alert.informativeText = "Reset all assignments for the current profile."
+                alert.addButton(withTitle: "Clear")
+                alert.addButton(withTitle: "Cancel")
+                alert.alertStyle = .warning
+                if alert.runModal() == .alertFirstButtonReturn {
+                    configurationManager.clearAllBindings()
                 }
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(Color.spText)
-                
-                Spacer()
             }
-            .padding(.horizontal, 16)
+            .font(.system(size: 10, weight: .bold))
+            .buttonStyle(.plain)
+            .foregroundColor(.red.opacity(0.85))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.red.opacity(0.12))
+            .cornerRadius(4)
         }
-        .frame(height: 50)
+        .frame(height: 44)
+        .padding(.horizontal, 16)
         .background(Color.spBackground)
     }
     
-    private var tabs: some View {
-        HStack(spacing: 4) {
-            ForEach(NumpadKey.Category.allCases, id: \.self) { category in
-                CategoryTab(
-                    category: category,
-                    isSelected: selectedCategory == category,
-                    bindingCount: count(for: category)
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedCategory = category
-                    }
+    private var allKeysGrid: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(NumpadKey.Category.allCases, id: \.self) { category in
+                    categorySection(category)
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
     }
-    
-    private func count(for category: NumpadKey.Category) -> Int {
-        NumpadKey.keys(in: category).filter { key in
-            snippetRepository.getBinding(for: key) != nil
-        }.count
-    }
-    
-    private var grid: some View {
-        ScrollView {
+
+    private func categorySection(_ category: NumpadKey.Category) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionHeader(category.rawValue.uppercased())
+                .padding(.top, 28)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach(NumpadKey.keys(in: selectedCategory)) { key in
+                ForEach(NumpadKey.keys(in: category)) { key in
                     KeyCell(
                         key: key,
                         binding: snippetRepository.getBinding(for: key),
@@ -141,8 +108,14 @@ struct MenuBarPopoverView: View {
                     }
                 }
             }
-            .padding()
         }
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 8, weight: .bold, design: .monospaced))
+            .foregroundColor(Color.spMuted.opacity(0.5))
+            .padding(.horizontal, 2)
     }
     
     private func onSelect(_ binding: KeyBinding) {
