@@ -73,7 +73,6 @@ struct FloatingHUDView: View {
         .frame(width: 260)
         .background(Color.spPanel.clipShape(RoundedRectangle(cornerRadius: 10)))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.spMuted.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.5), radius: 24, y: 12)
     }
 
     // MARK: - Progress bar
@@ -109,7 +108,7 @@ struct FloatingHUDView: View {
 
     private var peakBarColor: Color {
         switch hudManager.peakProgress {
-        case 0.5...: .accentColor
+        case 0.5...: Color.spAccent
         case 0.2...: .orange
         default:     .red
         }
@@ -154,7 +153,7 @@ struct PillBreadcrumb: View {
         HStack(spacing: 3) {
             Image(systemName: "house.fill")
                 .font(.system(size: 7, weight: .bold))
-                .foregroundColor(path.count > 1 ? .accentColor.opacity(0.8) : Color.spMuted)
+                .foregroundColor(path.count > 1 ? Color.spAccent.opacity(0.8) : Color.spMuted)
                 .onTapGesture { SidepieceEngine.shared.navigateFolderToDepth(-1) }
 
             ForEach(path.indices, id: \.self) { index in
@@ -186,7 +185,7 @@ private struct BreadcrumbCrumb: View {
     var body: some View {
         Text(label)
             .font(.system(size: 7, weight: isLast ? .heavy : .bold, design: .monospaced))
-            .foregroundColor(isLast ? Color.spText : Color.accentColor.opacity(0.85))
+            .foregroundColor(isLast ? Color.spText : Color.spAccent.opacity(0.85))
             .padding(.horizontal, 4).padding(.vertical, 2)
             .background(isHovered && !isLast ? Color.spPanelElevated : Color.clear)
             .cornerRadius(3)
@@ -213,7 +212,7 @@ struct PeakItemButton: View {
                 .font(.system(size: 7, weight: .bold, design: .monospaced))
                 .foregroundColor(isHovered ? .white : Color.spText)
                 .frame(width: 14, height: 14)
-                .background(isHovered ? Color.accentColor.opacity(0.6) : Color.accentColor.opacity(0.22))
+                .background(isHovered ? Color.spAccent.opacity(0.6) : Color.spAccent.opacity(0.22))
                 .cornerRadius(2)
             Text(label.uppercased())
                 .font(.system(size: 7, weight: isHovered ? .heavy : .bold, design: .monospaced))
