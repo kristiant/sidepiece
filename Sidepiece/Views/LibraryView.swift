@@ -101,7 +101,7 @@ struct LibraryView: View {
     private var newFolderButton: some View {
         Button(action: { isShowingCreateFolder = true }) {
             Image(systemName: "folder.badge.plus")
-                .foregroundColor(.accentColor)
+                .foregroundColor(Color.spAccent)
         }
         .buttonStyle(.plain)
         .help("New Folder")
@@ -125,9 +125,9 @@ struct LibraryView: View {
             Button(action: { isShowingCreateSnippet = true }) {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.spAccent)
                     .frame(width: 20, height: 20)
-                    .background(Color.accentColor.opacity(0.1))
+                    .background(Color.spAccent.opacity(0.1))
                     .cornerRadius(4)
             }
             .buttonStyle(.plain)
@@ -144,7 +144,14 @@ struct LibraryView: View {
     private var folderList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                ForEach(currentFolder == nil ? rootCategories : subCategories) { category in
+                let folders = currentFolder == nil ? rootCategories : subCategories
+
+                if !folders.isEmpty {
+                    sectionHeader("FOLDERS")
+                        .padding(.top, 4)
+                }
+
+                ForEach(folders) { category in
                     FolderRow(
                         category: category,
                         repository: snippetRepository,
@@ -163,11 +170,11 @@ struct LibraryView: View {
                         }
                     }
                 }
-                
+
                 if !localSnippets.isEmpty {
-                    Divider()
-                        .padding(.vertical, 8)
-                    
+                    sectionHeader("UN-GROUPED")
+                        .padding(.top, folders.isEmpty ? 4 : 12)
+
                     ForEach(localSnippets) { snippet in
                         SnippetLibraryRow(
                             snippet: snippet,
@@ -177,15 +184,15 @@ struct LibraryView: View {
                         )
                     }
                 }
-                
-                if (currentFolder == nil ? rootCategories : subCategories).isEmpty && localSnippets.isEmpty {
+
+                if folders.isEmpty && localSnippets.isEmpty {
                     Text("No contents")
                         .font(.caption2)
                         .foregroundColor(Color.spMuted)
                         .padding(.leading, 12)
                         .padding(.top, 20)
                 }
-                
+
                 Spacer()
             }
             .padding(8)
@@ -356,8 +363,8 @@ struct BreadcrumbItem: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
                 .background(
-                    isTargeted ? Color.accentColor.opacity(0.15)
-                    : isBold ? Color.accentColor.opacity(0.08)
+                    isTargeted ? Color.spAccent.opacity(0.15)
+                    : isBold ? Color.spAccent.opacity(0.08)
                     : Color.spPanelElevated.opacity(0.4)
                 )
                 .foregroundColor(isBold ? Color.spText : Color.spMuted)
@@ -382,7 +389,7 @@ struct FolderRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: isTargeted ? "folder.fill.badge.plus" : "folder.fill")
-                .foregroundColor(isTargeted ? .green : .accentColor)
+                .foregroundColor(isTargeted ? .green : Color.spAccent)
                 .font(.system(size: 16))
             
             VStack(alignment: .leading, spacing: 0) {
@@ -404,7 +411,7 @@ struct FolderRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 10)
-        .background(isTargeted ? Color.spDropTarget : (isHovered ? Color.accentColor.opacity(0.1) : Color.clear))
+        .background(isTargeted ? Color.spDropTarget : (isHovered ? Color.spAccent.opacity(0.1) : Color.clear))
         .cornerRadius(10)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
@@ -442,10 +449,10 @@ struct SnippetLibraryRow: View {
                     if let categoryName = categoryName {
                         Text(categoryName)
                             .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.accentColor.opacity(0.1))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.spAccent)
                             .cornerRadius(4)
                     }
                     
@@ -465,7 +472,7 @@ struct SnippetLibraryRow: View {
                             .font(.system(size: 11))
                     }
                     .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color.spAccent)
                     
                     Button(action: onDelete) {
                         Image(systemName: "trash")
@@ -479,7 +486,7 @@ struct SnippetLibraryRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 10)
-        .background(isHovered ? Color.accentColor.opacity(0.08) : Color.clear)
+        .background(isHovered ? Color.spAccent.opacity(0.08) : Color.clear)
         .cornerRadius(10)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -497,14 +504,14 @@ struct AppFunctionRow: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: function.icon).font(.system(size: 10)).foregroundColor(.accentColor)
-                .frame(width: 24, height: 24).background(Color.accentColor.opacity(0.12)).cornerRadius(6)
+            Image(systemName: function.icon).font(.system(size: 10)).foregroundColor(Color.spAccent)
+                .frame(width: 24, height: 24).background(Color.spAccent.opacity(0.12)).cornerRadius(6)
             Text(function.displayName.uppercased()).font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundColor(Color.spText)
             Spacer()
         }
         .padding(.vertical, 4).padding(.horizontal, 8)
-        .background(hovered ? Color.accentColor.opacity(0.05) : .clear).cornerRadius(6)
+        .background(hovered ? Color.spAccent.opacity(0.05) : .clear).cornerRadius(6)
         .onHover { hovered = $0 }.contentShape(Rectangle())
         .onDrag { NSItemProvider(object: "fnc:\(function.rawValue)" as NSString) }
     }
