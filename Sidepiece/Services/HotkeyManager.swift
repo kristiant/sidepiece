@@ -19,6 +19,31 @@ final class HotkeyManager: ObservableObject {
         get { monitor.shouldConsumeKey }
         set { monitor.shouldConsumeKey = newValue }
     }
+
+    var peakTriggerKeyCode: (() -> UInt16?)? {
+        get { monitor.peakTriggerKeyCode }
+        set { monitor.peakTriggerKeyCode = newValue }
+    }
+
+    var isPeaking: (() -> Bool)? {
+        get { monitor.isPeaking }
+        set { monitor.isPeaking = newValue }
+    }
+
+    var onPeakTrigger: (() -> Void)? {
+        get { monitor.onPeakTrigger }
+        set { monitor.onPeakTrigger = newValue }
+    }
+
+    var onNumberRowKey: ((NumpadKey) -> Void)? {
+        get { monitor.onNumberRowKey }
+        set { monitor.onNumberRowKey = newValue }
+    }
+
+    var onDismissPeak: (() -> Void)? {
+        get { monitor.onDismissPeak }
+        set { monitor.onDismissPeak = newValue }
+    }
     
     private var permissionTimer: Timer?
     

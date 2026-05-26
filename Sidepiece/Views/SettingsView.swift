@@ -407,6 +407,32 @@ struct GeneralSettingsView: View {
                 .cornerRadius(12)
                 
                 VStack(alignment: .leading, spacing: 12) {
+                    Text("Keyboard Mode")
+                        .font(.headline)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Peak trigger key")
+                            .font(.subheadline)
+
+                        Picker("", selection: configurationManager.binding(\.peakHotkey)) {
+                            Text("None (numpad only)").tag(nil as NumpadKey?)
+                            ForEach(NumpadKey.keys(in: .functionKeys), id: \.self) { key in
+                                Text(key.displayName).tag(key as NumpadKey?)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+
+                        Text("While the peak panel is open, press 1–9 or 0 on the number row to trigger items. Press Esc to dismiss.")
+                            .font(.caption)
+                            .foregroundColor(Color.spMuted)
+                    }
+                }
+                .padding()
+                .background(Color.spPanel)
+                .cornerRadius(12)
+
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Permissions")
                         .font(.headline)
                     

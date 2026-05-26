@@ -18,6 +18,9 @@ struct AppConfiguration: Codable, Equatable {
     var autoExitFolderMode: Bool
     var autoExitFolderAfterSelection: Bool
     var autoPeakFolderContents: Bool
+    /// Optional hotkey that triggers the HUD peak panel (for non-numpad keyboards).
+    /// When set, pressing this key toggles the peak panel regardless of any binding.
+    var peakHotkey: NumpadKey?
     
     // MARK: - Initialisation
     
@@ -34,7 +37,8 @@ struct AppConfiguration: Codable, Equatable {
         autoEnterAfterPaste: Bool = false,
         autoExitFolderMode: Bool = true,
         autoExitFolderAfterSelection: Bool = true,
-        autoPeakFolderContents: Bool = true
+        autoPeakFolderContents: Bool = true,
+        peakHotkey: NumpadKey? = nil
     ) {
         self.launchAtLogin = launchAtLogin
         self.showMenuBarIcon = showMenuBarIcon
@@ -49,6 +53,7 @@ struct AppConfiguration: Codable, Equatable {
         self.autoExitFolderMode = autoExitFolderMode
         self.autoExitFolderAfterSelection = autoExitFolderAfterSelection
         self.autoPeakFolderContents = autoPeakFolderContents
+        self.peakHotkey = peakHotkey
     }
     
     init(from decoder: Decoder) throws {
@@ -66,6 +71,7 @@ struct AppConfiguration: Codable, Equatable {
         self.autoExitFolderMode = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderMode) ?? true
         self.autoExitFolderAfterSelection = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderAfterSelection) ?? true
         self.autoPeakFolderContents = try container.decodeIfPresent(Bool.self, forKey: .autoPeakFolderContents) ?? true
+        self.peakHotkey = try container.decodeIfPresent(NumpadKey.self, forKey: .peakHotkey)
     }
     
     // MARK: - Default
