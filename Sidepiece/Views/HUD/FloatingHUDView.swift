@@ -190,10 +190,12 @@ private struct BreadcrumbCrumb: View {
             .background(isHovered && !isLast ? Color.spPanelElevated : Color.clear)
             .cornerRadius(3)
             .contentShape(Rectangle())
-            .onHover { isHovered = $0 }
+            .onHover { hovered in
+                isHovered = hovered
+                hovered ? NSCursor.pointingHand.push() : NSCursor.pop()
+            }
             .onTapGesture { if !isLast { action() } }
             .animation(.easeOut(duration: 0.1), value: isHovered)
-            .cursor(.pointingHand)
     }
 }
 
@@ -224,10 +226,12 @@ struct PeakItemButton: View {
         .background(isHovered ? Color.spPanelElevated : Color.spPanelElevated.opacity(0.4))
         .cornerRadius(4)
         .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
+        .onHover { hovered in
+            isHovered = hovered
+            hovered ? NSCursor.pointingHand.push() : NSCursor.pop()
+        }
         .onTapGesture { action() }
         .animation(.easeOut(duration: 0.1), value: isHovered)
-        .cursor(.pointingHand)
     }
 }
 

@@ -18,10 +18,14 @@ final class SidepieceEngine: ObservableObject {
     private init() {
         setupHotkeys()
         // Keep HUD in sync when the auto-exit timer fires inside NavigationEngine.
+        // Dismiss the peak too — its content is now stale (folder context is gone).
         NotificationCenter.default.addObserver(
             forName: .didAutoExitFolder, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.hud.clearFolderPath() }
+            Task { @MainActor in
+                self?.hud.clearFolderPath()
+                self?.hud.dismissPeak()
+            }
         }
     }
 
@@ -32,6 +36,14 @@ final class SidepieceEngine: ObservableObject {
             return self.navigation.currentFolderId != nil ||
                    self.snippetRepo.getBinding(for: key) != nil
         }
+        // Peak trigger — closure so config changes are reflected immediately.
+        hotkeyManager.peakTriggerKeyCode = { [weak self] in
+            self?.configManager.configuration.peakHotkey?.keyCode
+        }
+        hotkeyManager.isPeaking    = { [weak self] in self?.hud.isPeaking ?? false }
+        hotkeyManager.onPeakTrigger  = { [weak self] in self?.peakSnippets() }
+        hotkeyManager.onNumberRowKey = { [weak self] key in self?.handleKeyPress(key) }
+        hotkeyManager.onDismissPeak  = { [weak self] in self?.hud.dismissPeak() }
     }
 
     /// Simulate a numpad key press from the GUI (identical path to hardware events).
@@ -65,12 +77,17 @@ final class SidepieceEngine: ObservableObject {
         if let subCategory = item as? SnippetCategory {
             navigation.enterFolder(subCategory.id, name: subCategory.name)
             hud.pushFolder(id: subCategory.id, name: subCategory.name)
-            if configManager.configuration.autoPeakFolderContents { peakSnippets(toggle: false) }
+            // Always refresh the peak if it's already open — keeps displayed content
+            // accurate regardless of the autoPeakFolderContents preference.
+            if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
+                peakSnippets(toggle: false)
+            }
         } else if let snippet = item as? Snippet {
             executeSnippet(snippet)
             if configManager.configuration.autoExitFolderAfterSelection {
                 navigation.exitFolder()
                 hud.clearFolderPath()
+                hud.dismissPeak()  // peak content is now stale after exiting folder
             } else {
                 navigation.resetTimer()
             }
@@ -128,8 +145,40 @@ final class SidepieceEngine: ObservableObject {
 
     private func handleAppFunction(_ function: KeyBinding.AppFunction) {
         switch function {
-        case .peakSnippets: peakSnippets()
+        case .peakSnippets:   peakSnippets()
+        case .cycleWindows:   cycleFrontmostAppWindows()
+        case .appExpose:      triggerAppExpose()
+        case .missionControl: triggerMissionControl()
         }
+    }
+
+    /// Simulates ⌘` — macOS "Cycle Through Windows".
+    private func cycleFrontmostAppWindows() {
+        postSystemKey(virtualKey: 0x32, flags: .maskCommand)  // kVK_ANSI_Grave
+        logger.info("Cycling windows via ⌘`")
+    }
+
+    /// Simulates ⌃↓ — macOS "App Exposé" (show all windows of the frontmost app).
+    private func triggerAppExpose() {
+        postSystemKey(virtualKey: 0x7D, flags: .maskControl)  // kVK_DownArrow
+        logger.info("Triggering App Exposé via ⌃↓")
+    }
+
+    /// Simulates ⌃↑ — macOS "Mission Control" (show all windows of all apps).
+    private func triggerMissionControl() {
+        postSystemKey(virtualKey: 0x7E, flags: .maskControl)  // kVK_UpArrow
+        logger.info("Triggering Mission Control via ⌃↑")
+    }
+
+    /// Posts a synthetic key-down + key-up pair at the HID event tap level.
+    private func postSystemKey(virtualKey: CGKeyCode, flags: CGEventFlags) {
+        let source  = CGEventSource(stateID: .hidSystemState)
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: true)
+        let keyUp   = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: false)
+        keyDown?.flags = flags
+        keyUp?.flags   = flags
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
     }
 
     func peakSnippets(toggle: Bool = true) {
