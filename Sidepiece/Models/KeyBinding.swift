@@ -33,16 +33,25 @@ struct KeyBinding: Identifiable, Codable, Equatable {
     
     enum AppFunction: String, Codable, CaseIterable {
         case peakSnippets
-        
+        case cycleWindows
+        case appExpose
+        case missionControl
+
         var displayName: String {
             switch self {
-            case .peakSnippets: return "Peak Snippets"
+            case .peakSnippets:   return "Peak Snippets"
+            case .cycleWindows:   return "Cycle Windows"
+            case .appExpose:      return "App Exposé"
+            case .missionControl: return "Mission Control"
             }
         }
-        
+
         var icon: String {
             switch self {
-            case .peakSnippets: return "eye.fill"
+            case .peakSnippets:   return "eye.fill"
+            case .cycleWindows:   return "rectangle.2.swap"
+            case .appExpose:      return "rectangle.3.group.fill"
+            case .missionControl: return "square.3.layers.3d.top.filled"
             }
         }
     }
