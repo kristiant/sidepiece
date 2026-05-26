@@ -26,6 +26,10 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
     case plus
     case enter
     case decimal
+    case del
+    case pageUp
+    case pageDown
+    case end
     
     // MARK: - Function Keys (F1-F19 for Apple Extended Keyboards)
     
@@ -76,6 +80,10 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .plus: return "+"
         case .enter: return "Enter"
         case .decimal: return "."
+        case .del: return "Del"
+        case .pageUp: return "Page Up"
+        case .pageDown: return "Page Down"
+        case .end: return "End"
         case .f1: return "F1"
         case .f2: return "F2"
         case .f3: return "F3"
@@ -112,6 +120,10 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .plus: return "+"
         case .enter: return "↵"
         case .decimal: return "."
+        case .del: return "⌦"
+        case .pageUp: return "⇞"
+        case .pageDown: return "⇟"
+        case .end: return "End"
         case .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10,
              .f11, .f12, .f13, .f14, .f15, .f16, .f17, .f18, .f19:
             return displayName
@@ -139,6 +151,10 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .plus: return UInt16(kVK_ANSI_KeypadPlus)
         case .enter: return UInt16(kVK_ANSI_KeypadEnter)
         case .decimal: return UInt16(kVK_ANSI_KeypadDecimal)
+        case .del: return UInt16(kVK_ForwardDelete)
+        case .pageUp: return UInt16(kVK_PageUp)
+        case .pageDown: return UInt16(kVK_PageDown)
+        case .end: return UInt16(kVK_End)
         case .f1: return UInt16(kVK_F1)
         case .f2: return UInt16(kVK_F2)
         case .f3: return UInt16(kVK_F3)
@@ -184,6 +200,10 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case kVK_ANSI_KeypadPlus: self = .plus
         case kVK_ANSI_KeypadEnter: self = .enter
         case kVK_ANSI_KeypadDecimal: self = .decimal
+        case kVK_ForwardDelete: self = .del
+        case kVK_PageUp: self = .pageUp
+        case kVK_PageDown: self = .pageDown
+        case kVK_End: self = .end
         case kVK_F1: self = .f1
         case kVK_F2: self = .f2
         case kVK_F3: self = .f3
@@ -206,6 +226,27 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         default: return nil
         }
     }
+
+    // MARK: - Number Row Mapping
+
+    /// Maps a regular keyboard number-row key code to its numpad equivalent.
+    /// Used to handle key presses while the HUD peak panel is active,
+    /// so non-numpad keyboards can still trigger actions.
+    init?(numberRowKeyCode: UInt16) {
+        switch Int(numberRowKeyCode) {
+        case kVK_ANSI_0: self = .num0
+        case kVK_ANSI_1: self = .num1
+        case kVK_ANSI_2: self = .num2
+        case kVK_ANSI_3: self = .num3
+        case kVK_ANSI_4: self = .num4
+        case kVK_ANSI_5: self = .num5
+        case kVK_ANSI_6: self = .num6
+        case kVK_ANSI_7: self = .num7
+        case kVK_ANSI_8: self = .num8
+        case kVK_ANSI_9: self = .num9
+        default: return nil
+        }
+    }
     
     // MARK: - Grouping
     
@@ -222,7 +263,8 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
              .num5, .num6, .num7, .num8, .num9:
             return .numbers
         case .clear, .equals, .divide, .multiply,
-             .minus, .plus, .enter, .decimal:
+             .minus, .plus, .enter, .decimal,
+             .del, .pageUp, .pageDown, .end:
             return .operators
         case .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10,
              .f11, .f12, .f13, .f14, .f15, .f16, .f17, .f18, .f19:
