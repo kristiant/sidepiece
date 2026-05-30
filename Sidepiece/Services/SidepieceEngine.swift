@@ -102,7 +102,9 @@ final class SidepieceEngine: ObservableObject {
             if let folder = snippetRepo.getCategory(id: id) {
                 navigation.enterFolder(id, name: folder.name)
                 hud.pushFolder(id: id, name: folder.name)
-                if configManager.configuration.autoPeakFolderContents { peakSnippets(toggle: false) }
+                if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
+                    peakSnippets(toggle: false)
+                }
             }
         case .switchProfile(let id):
             configManager.activeProfileId = id
@@ -116,6 +118,10 @@ final class SidepieceEngine: ObservableObject {
             }
         case .appFunction(let function):
             handleAppFunction(function)
+        case .launchApp(let bundleId):
+            launchApplication(bundleId: bundleId)
+        case .runCommand(let command):
+            runShellCommand(command)
         }
     }
 
@@ -149,6 +155,41 @@ final class SidepieceEngine: ObservableObject {
         case .cycleWindows:   cycleFrontmostAppWindows()
         case .appExpose:      triggerAppExpose()
         case .missionControl: triggerMissionControl()
+        }
+    }
+
+    private func launchApplication(bundleId: String) {
+        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+            logger.error("Cannot find app with bundle ID: \(bundleId)")
+            hud.showFeedback(message: "App not found", icon: "exclamationmark.triangle.fill")
+            return
+        }
+        let name = Bundle(url: appURL)?.infoDictionary?["CFBundleDisplayName"] as? String
+            ?? Bundle(url: appURL)?.infoDictionary?["CFBundleName"] as? String
+            ?? bundleId
+        NSWorkspace.shared.open(appURL)
+        hud.showFeedback(message: "Opening \(name)", icon: "arrow.up.forward.app.fill")
+        logger.info("Launching \(bundleId) at \(appURL.path)")
+    }
+
+    /// Runs an arbitrary shell command via `/bin/sh -c` on a background thread.
+    private func runShellCommand(_ command: String) {
+        hud.showFeedback(message: "Running command", icon: "terminal.fill")
+        logger.info("Running shell command: \(command)")
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", command]
+            // Inherit the user's environment so PATH, HOME etc. are available.
+            process.environment = ProcessInfo.processInfo.environment
+            do {
+                try process.run()
+                process.waitUntilExit()
+                let status = process.terminationStatus
+                await self?.logger.info("Command exited with status \(status)")
+            } catch {
+                await self?.logger.error("Command failed to launch: \(error)")
+            }
         }
     }
 

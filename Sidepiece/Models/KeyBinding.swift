@@ -9,19 +9,18 @@ struct KeyBinding: Identifiable, Codable, Equatable {
         case switchProfile(id: UUID)
         case cycleProfile(direction: CycleDirection)
         case appFunction(AppFunction)
-        
+        case launchApp(bundleId: String)
+        case runCommand(command: String)
+
         var displayName: String {
             switch self {
-            case .snippet:
-                return "Snippet"
-            case .folder:
-                return "Folder"
-            case .switchProfile:
-                return "Switch Profile"
-            case .cycleProfile(let direction):
-                return "Cycle Profiles (\(direction.rawValue.capitalized))"
-            case .appFunction(let function):
-                return function.displayName
+            case .snippet:               return "Snippet"
+            case .folder:                return "Folder"
+            case .switchProfile:         return "Switch Profile"
+            case .cycleProfile(let d):   return "Cycle Profiles (\(d.rawValue.capitalized))"
+            case .appFunction(let f):    return f.displayName
+            case .launchApp(let id):     return "Launch: \(id)"
+            case .runCommand(let cmd):   return cmd.components(separatedBy: " ").prefix(3).joined(separator: " ")
             }
         }
     }
