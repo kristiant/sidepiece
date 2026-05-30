@@ -32,25 +32,35 @@ struct KeyBindingEditorSheet: View {
     
     // Function State
     @State private var selectedFunction: KeyBinding.AppFunction = .peakSnippets
+
+    // Launch App State
+    @State private var selectedBundleId: String = ""
+
+    // Run Command State
+    @State private var shellCommand: String = ""
     
     @Environment(\.dismiss) private var dismiss
     
     enum ActionType: String, CaseIterable, Identifiable {
-        case newSnippet = "New Snippet"
+        case newSnippet      = "New Snippet"
         case existingSnippet = "Existing Snippet"
-        case folder = "Folder"
-        case switchProfile = "Switch Profile"
-        case appFunction = "App Function"
-        
+        case folder          = "Folder"
+        case switchProfile   = "Switch Profile"
+        case appFunction     = "App Function"
+        case launchApp       = "Launch App"
+        case runCommand      = "Run Command"
+
         var id: String { self.rawValue }
-        
+
         var icon: String {
             switch self {
-            case .newSnippet: return "plus.square.fill"
+            case .newSnippet:      return "plus.square.fill"
             case .existingSnippet: return "doc.on.doc.fill"
-            case .folder: return "folder.fill"
-            case .switchProfile: return "person.fill"
-            case .appFunction: return "bolt.fill"
+            case .folder:          return "folder.fill"
+            case .switchProfile:   return "person.fill"
+            case .appFunction:     return "bolt.fill"
+            case .launchApp:       return "arrow.up.forward.app.fill"
+            case .runCommand:      return "terminal.fill"
             }
         }
     }
@@ -66,46 +76,59 @@ struct KeyBindingEditorSheet: View {
         VStack(spacing: 0) {
             sheetHeader
             Divider()
-            
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     keyInfoSection
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Action Type")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                        
-                        Picker("", selection: $selectedActionType) {
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                             ForEach(ActionType.allCases) { type in
-                                Label(type.rawValue, systemImage: type.icon).tag(type)
+                                Button {
+                                    selectedActionType = type
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: type.icon)
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(type.rawValue)
+                                            .font(.system(size: 9, weight: .medium))
+                                            .multilineTextAlignment(.center)
+                                            .lineLimit(2)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(selectedActionType == type ? Color.spAccent : Color.spPanelElevated)
+                                    .foregroundColor(selectedActionType == type ? .white : Color.spText)
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .pickerStyle(.segmented)
                     }
-                    
+
                     Divider()
-                    
+
                     switch selectedActionType {
-                    case .newSnippet:
-                        newSnippetFields
-                    case .existingSnippet:
-                        existingSnippetPicker
-                    case .folder:
-                        folderPicker
-                    case .switchProfile:
-                        combinedProfileFields
-                    case .appFunction:
-                        appFunctionPicker
+                    case .newSnippet:      newSnippetFields
+                    case .existingSnippet: existingSnippetPicker
+                    case .folder:          folderPicker
+                    case .switchProfile:   combinedProfileFields
+                    case .appFunction:     appFunctionPicker
+                    case .launchApp:       launchAppPicker
+                    case .runCommand:      runCommandEditor
                     }
                 }
                 .padding()
             }
-            
+
             Divider()
             sheetFooter
         }
-        .frame(width: 420, height: 520)
+        .frame(width: 460, height: 560)
         .background(Color.spBackground)
         .onAppear {
             if let binding = binding {
@@ -132,6 +155,12 @@ struct KeyBindingEditorSheet: View {
                 case .appFunction(let function):
                     selectedActionType = .appFunction
                     selectedFunction = function
+                case .launchApp(let bundleId):
+                    selectedActionType = .launchApp
+                    selectedBundleId = bundleId
+                case .runCommand(let command):
+                    selectedActionType = .runCommand
+                    shellCommand = command
                 }
             } else {
                 selectedProfileId = configurationManager.profiles.first?.id
@@ -352,7 +381,47 @@ struct KeyBindingEditorSheet: View {
                 .foregroundColor(Color.spMuted)
         }
     }
-    
+
+    private var launchAppPicker: some View {
+        LaunchAppPickerView(selectedBundleId: $selectedBundleId)
+    }
+
+    private var runCommandEditor: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Shell Command")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Spacer()
+                    Button("Test") {
+                        let cmd = shellCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !cmd.isEmpty else { return }
+                        SidepieceEngine.shared.executeAction(.runCommand(command: cmd))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                TextEditor(text: $shellCommand)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 100)
+                    .padding(8)
+                    .background(Color(nsColor: .textBackgroundColor))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.spPanelElevated, lineWidth: 1)
+                    )
+            }
+
+            Text("Paste any shell command. It runs via /bin/sh so pipes, redirects, and environment variables all work.")
+                .font(.caption)
+                .foregroundColor(Color.spMuted)
+        }
+    }
+
     private var sheetFooter: some View {
         HStack {
             if !isNewBinding {
@@ -401,6 +470,10 @@ struct KeyBindingEditorSheet: View {
             return true
         case .appFunction:
             return true
+        case .launchApp:
+            return !selectedBundleId.isEmpty
+        case .runCommand:
+            return !shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
     
@@ -430,6 +503,10 @@ struct KeyBindingEditorSheet: View {
             }
         case .appFunction:
             updatedBinding.action = .appFunction(selectedFunction)
+        case .launchApp:
+            updatedBinding.action = .launchApp(bundleId: selectedBundleId)
+        case .runCommand:
+            updatedBinding.action = .runCommand(command: shellCommand.trimmingCharacters(in: .whitespacesAndNewlines))
         }
         
         updatedBinding.updatedAt = Date()
