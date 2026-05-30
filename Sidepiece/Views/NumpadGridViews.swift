@@ -52,6 +52,7 @@ struct KeyCell: View {
     @ObservedObject var configurationManager: ConfigurationManager
     @ObservedObject var snippetRepository: SnippetRepository
     let onTap: () -> Void
+    var onEdit: (() -> Void)? = nil
     
     @State private var isHovered = false
     @State private var isTargeted = false
@@ -78,11 +79,15 @@ struct KeyCell: View {
             onDrop(providers)
         }
         .contextMenu {
+            if let onEdit {
+                Button { onEdit() } label: {
+                    Label("Edit Binding...", systemImage: "pencil")
+                }
+            }
             if hasBinding {
+                Divider()
                 Button(role: .destructive) {
-                    withAnimation {
-                        snippetRepository.removeBinding(for: key)
-                    }
+                    withAnimation { snippetRepository.removeBinding(for: key) }
                 } label: {
                     Label("Clear Key", systemImage: "trash")
                 }
@@ -164,6 +169,12 @@ struct KeyCell: View {
             return "Cycle \(direction.rawValue.capitalized)"
         case .appFunction(let function):
             return function.displayName
+        case .launchApp(let bundleId):
+            let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)
+            return Bundle(url: url ?? URL(fileURLWithPath: ""))?.infoDictionary?["CFBundleName"] as? String
+                ?? bundleId
+        case .runCommand(let cmd):
+            return cmd.components(separatedBy: " ").prefix(3).joined(separator: " ")
         }
     }
     

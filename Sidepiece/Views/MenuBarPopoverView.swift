@@ -6,8 +6,10 @@ struct MenuBarPopoverView: View {
     @ObservedObject var configurationManager: ConfigurationManager
     let onSnippetSelected: (Snippet) -> Void
     let onAppFunctionSelected: (KeyBinding.AppFunction) -> Void
-    
+
     @State private var showingSettings = false
+    @State private var editingBinding: KeyBinding?
+    @State private var isEditingBinding = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -39,6 +41,21 @@ struct MenuBarPopoverView: View {
                 snippetRepository: snippetRepository
             )
             .background(Color.spBackground)
+        }
+        .sheet(isPresented: $isEditingBinding) {
+            KeyBindingEditorSheet(
+                binding: $editingBinding,
+                snippetRepository: snippetRepository,
+                configurationManager: configurationManager,
+                onSave: { binding in
+                    snippetRepository.updateBinding(binding)
+                    isEditingBinding = false
+                },
+                onDelete: { binding in
+                    snippetRepository.removeBinding(for: binding.key)
+                    isEditingBinding = false
+                }
+            )
         }
     }
     
@@ -104,7 +121,11 @@ struct MenuBarPopoverView: View {
                     ) {
                         if let binding = snippetRepository.getBinding(for: key) {
                             onSelect(binding)
+                        } else {
+                            openEditor(for: key)
                         }
+                    } onEdit: {
+                        openEditor(for: key)
                     }
                 }
             }
@@ -134,7 +155,17 @@ struct MenuBarPopoverView: View {
             configurationManager.cycleProfiles(direction: direction)
         case .appFunction(let function):
             onAppFunctionSelected(function)
+        case .launchApp(let bundleId):
+            SidepieceEngine.shared.executeAction(.launchApp(bundleId: bundleId))
+        case .runCommand(let command):
+            SidepieceEngine.shared.executeAction(.runCommand(command: command))
         }
+    }
+
+    private func openEditor(for key: NumpadKey) {
+        editingBinding = snippetRepository.getBinding(for: key)
+            ?? KeyBinding(key: key, action: .appFunction(.peakSnippets))
+        isEditingBinding = true
     }
     
     private var footer: some View {
