@@ -350,7 +350,23 @@ struct GeneralSettingsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Interaction")
                         .font(.headline)
-                    
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Toggle("Show HUD overlay", isOn: Binding(
+                            get: { configurationManager.configuration.showHUD },
+                            set: { newValue in
+                                var config = configurationManager.configuration
+                                config.showHUD = newValue
+                                configurationManager.updateConfiguration(config)
+                            }
+                        ))
+                        Text("Uncheck to run in stealth mode - no visual indicator on screen.")
+                            .font(.caption)
+                            .foregroundColor(Color.spMuted)
+                    }
+
+                    Divider()
+
                     Toggle("Auto-paste after trigger", isOn: Binding(
                         get: { configurationManager.configuration.autoPaste },
                         set: { newValue in

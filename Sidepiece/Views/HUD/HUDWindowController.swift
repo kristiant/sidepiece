@@ -72,7 +72,6 @@ final class HUDWindowController: NSWindowController {
         updatePosition(state: initial)
 
         // Resize whenever *any* of the three sizing-relevant properties change.
-        // Using CombineLatest so all three are always considered together.
         Publishers.CombineLatest3(
             hudManager.$isPeaking,
             hudManager.$folderPath.map { !$0.isEmpty },
@@ -85,6 +84,27 @@ final class HUDWindowController: NSWindowController {
             self?.updatePosition(state: state)
         }
         .store(in: &cancellables)
+
+        // Show or hide the window whenever the stealth-mode setting changes.
+        ConfigurationManager.shared.$configuration
+            .map(\.showHUD)
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] showHUD in
+                guard let self else { return }
+                if showHUD {
+                    let currentState = HUDWindowState(
+                        isPeaking: hudManager.isPeaking,
+                        hasFolderPath: !hudManager.folderPath.isEmpty,
+                        hasFeedback: hudManager.feedbackMessage != nil
+                    )
+                    updatePosition(state: currentState)
+                    window?.orderFrontRegardless()
+                } else {
+                    window?.orderOut(nil)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     required init?(coder: NSCoder) { fatalError("use init(hudManager:)") }
@@ -92,6 +112,8 @@ final class HUDWindowController: NSWindowController {
     // MARK: - Positioning
 
     func updatePosition(state: HUDWindowState) {
+        // Don't resize/show while in stealth mode.
+        guard ConfigurationManager.shared.configuration.showHUD else { return }
         guard let screen = NSScreen.main else { return }
         let f = screen.visibleFrame
 
@@ -129,4 +151,5 @@ final class HUDWindowController: NSWindowController {
     // MARK: - Visibility
 
     func show() { window?.orderFrontRegardless() }
+    func hide() { window?.orderOut(nil) }
 }

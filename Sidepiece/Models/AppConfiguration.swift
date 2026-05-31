@@ -7,6 +7,7 @@ struct AppConfiguration: Codable, Equatable {
     
     var launchAtLogin: Bool
     var showMenuBarIcon: Bool
+    var showHUD: Bool
     var playSoundOnCopy: Bool
     var showNotificationOnCopy: Bool
     var activeProfileId: UUID?
@@ -19,7 +20,6 @@ struct AppConfiguration: Codable, Equatable {
     var autoExitFolderAfterSelection: Bool
     var autoPeakFolderContents: Bool
     /// Optional hotkey that triggers the HUD peak panel (for non-numpad keyboards).
-    /// When set, pressing this key toggles the peak panel regardless of any binding.
     var peakHotkey: NumpadKey?
     
     // MARK: - Initialisation
@@ -27,6 +27,7 @@ struct AppConfiguration: Codable, Equatable {
     init(
         launchAtLogin: Bool = false,
         showMenuBarIcon: Bool = true,
+        showHUD: Bool = true,
         playSoundOnCopy: Bool = true,
         showNotificationOnCopy: Bool = false,
         activeProfileId: UUID? = nil,
@@ -42,6 +43,7 @@ struct AppConfiguration: Codable, Equatable {
     ) {
         self.launchAtLogin = launchAtLogin
         self.showMenuBarIcon = showMenuBarIcon
+        self.showHUD = showHUD
         self.playSoundOnCopy = playSoundOnCopy
         self.showNotificationOnCopy = showNotificationOnCopy
         self.activeProfileId = activeProfileId
@@ -60,6 +62,7 @@ struct AppConfiguration: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
         self.showMenuBarIcon = try container.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? true
+        self.showHUD = try container.decodeIfPresent(Bool.self, forKey: .showHUD) ?? true
         self.playSoundOnCopy = try container.decodeIfPresent(Bool.self, forKey: .playSoundOnCopy) ?? true
         self.showNotificationOnCopy = try container.decodeIfPresent(Bool.self, forKey: .showNotificationOnCopy) ?? false
         self.activeProfileId = try container.decodeIfPresent(UUID.self, forKey: .activeProfileId)
