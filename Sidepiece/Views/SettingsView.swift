@@ -308,311 +308,183 @@ struct GeneralSettingsView: View {
     @ObservedObject var configurationManager: ConfigurationManager
     @ObservedObject var snippetRepository: SnippetRepository
     @State private var showingClearAlert = false
-    
+
     var body: some View {
+        let cfg = configurationManager
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Appearance & Sound")
-                        .font(.headline)
-                    
-                    Toggle("Launch at login", isOn: Binding(
-                        get: { configurationManager.configuration.launchAtLogin },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.launchAtLogin = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    Toggle("Play sound on copy", isOn: Binding(
-                        get: { configurationManager.configuration.playSoundOnCopy },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.playSoundOnCopy = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    Toggle("Show notification on copy", isOn: Binding(
-                        get: { configurationManager.configuration.showNotificationOnCopy },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.showNotificationOnCopy = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
+                SettingsPanel("Appearance & Sound") {
+                    Toggle("Launch at login", isOn: cfg.binding(\.launchAtLogin))
+                    Toggle("Play sound on copy", isOn: cfg.binding(\.playSoundOnCopy))
+                    Toggle("Show notification on copy", isOn: cfg.binding(\.showNotificationOnCopy))
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Interaction")
-                        .font(.headline)
 
+                SettingsPanel("Interaction") {
                     VStack(alignment: .leading, spacing: 4) {
-                        Toggle("Show HUD overlay", isOn: Binding(
-                            get: { configurationManager.configuration.showHUD },
-                            set: { newValue in
-                                var config = configurationManager.configuration
-                                config.showHUD = newValue
-                                configurationManager.updateConfiguration(config)
-                            }
-                        ))
-                        Text("Uncheck to run in stealth mode - no visual indicator on screen.")
-                            .font(.caption)
-                            .foregroundColor(Color.spMuted)
+                        Toggle("Show HUD overlay", isOn: cfg.binding(\.showHUD))
+                        Caption("Uncheck to run in stealth mode - no visual indicator on screen.")
                     }
-
                     Divider()
-
-                    Toggle("Auto-paste after trigger", isOn: Binding(
-                        get: { configurationManager.configuration.autoPaste },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.autoPaste = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    if configurationManager.configuration.autoPaste {
-                        Toggle("Press Enter after paste", isOn: Binding(
-                            get: { configurationManager.configuration.autoEnterAfterPaste },
-                            set: { newValue in
-                                var config = configurationManager.configuration
-                                config.autoEnterAfterPaste = newValue
-                                configurationManager.updateConfiguration(config)
-                            }
-                        ))
+                    Toggle("Auto-paste after trigger", isOn: cfg.binding(\.autoPaste))
+                    if cfg.configuration.autoPaste {
+                        Toggle("Press Enter after paste", isOn: cfg.binding(\.autoEnterAfterPaste))
                     }
-                    
-                    Toggle("Auto-exit folder mode (5s)", isOn: Binding(
-                        get: { configurationManager.configuration.autoExitFolderMode },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.autoExitFolderMode = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    Toggle("Auto-exit folder after selection", isOn: Binding(
-                        get: { configurationManager.configuration.autoExitFolderAfterSelection },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.autoExitFolderAfterSelection = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    Toggle("Auto-peek folder contents", isOn: Binding(
-                        get: { configurationManager.configuration.autoPeakFolderContents },
-                        set: { newValue in
-                            var config = configurationManager.configuration
-                            config.autoPeakFolderContents = newValue
-                            configurationManager.updateConfiguration(config)
-                        }
-                    ))
-                    
-                    Text("Automatically return to root after 5s of inactivity, or peek contents when entering.")
-                        .font(.caption)
-                        .foregroundColor(Color.spMuted)
+                    Toggle("Auto-exit folder mode (5s)", isOn: cfg.binding(\.autoExitFolderMode))
+                    Toggle("Auto-exit folder after selection", isOn: cfg.binding(\.autoExitFolderAfterSelection))
+                    Toggle("Auto-peek folder contents", isOn: cfg.binding(\.autoPeakFolderContents))
+                    Caption("Automatically return to root after 5s of inactivity, or peek contents when entering.")
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Keyboard Mode")
-                        .font(.headline)
 
+                SettingsPanel("Keyboard Mode") {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Peak trigger key")
-                            .font(.subheadline)
-
-                        Picker("", selection: configurationManager.binding(\.peakHotkey)) {
+                        Text("Peak trigger key").font(.subheadline)
+                        Picker("", selection: cfg.binding(\.peakHotkey)) {
                             Text("None (numpad only)").tag(nil as NumpadKey?)
-                            ForEach(NumpadKey.keys(in: .functionKeys), id: \.self) { key in
+                            ForEach(NumpadKey.keys(in: .functionKeys)) { key in
                                 Text(key.displayName).tag(key as NumpadKey?)
                             }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
-
-                        Text("While the peak panel is open, press 1–9 or 0 on the number row to trigger items. Press Esc to dismiss.")
-                            .font(.caption)
-                            .foregroundColor(Color.spMuted)
+                        Caption("While the peak panel is open, press 1–9 or 0 on the number row to trigger items. Press Esc to dismiss.")
                     }
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Permissions")
-                        .font(.headline)
-                    
+                SettingsPanel("Permissions") {
                     HStack {
                         Text("Accessibility")
                         Spacer()
                         AccessibilityStatusView()
                     }
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Data Management")
-                        .font(.headline)
-                    
+
+                SettingsPanel("Data Management") {
                     HStack(spacing: 12) {
                         Button(action: exportAllData) {
                             Label("Export All...", systemImage: "square.and.arrow.up")
                         }
-                        .buttonStyle(.bordered)
-                        
                         Button(action: importAllData) {
                             Label("Import All...", systemImage: "square.and.arrow.down")
                         }
-                        .buttonStyle(.bordered)
                     }
+                    .buttonStyle(.bordered)
                     .padding(.vertical, 4)
-                    
-                    Text("Backup or restore all profiles, snippets, and app settings to a JSON file.")
-                        .font(.caption)
-                        .foregroundColor(Color.spMuted)
-                    
-                    Divider()
-                        .padding(.vertical, 8)
-                    
-                    Button {
-                        showingClearAlert = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                            Text("Clear all key bindings")
-                            Spacer()
-                        }
-                        .foregroundColor(.red.opacity(0.85))
-                        .padding(.vertical, 4)
+                    Caption("Backup or restore all profiles, snippets, and app settings to a JSON file.")
+                    Divider().padding(.vertical, 8)
+                    Button { showingClearAlert = true } label: {
+                        Label("Clear all key bindings", systemImage: "trash")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(.red.opacity(0.85))
+                            .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
-                    
-                    Text("This will remove all snippets assigned to keys in the active profile.")
-                        .font(.caption)
-                        .foregroundColor(Color.spMuted)
+                    Caption("This will remove all snippets assigned to keys in the active profile.")
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
             }
             .padding()
         }
         .alert("Clear All Bindings?", isPresented: $showingClearAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Clear All", role: .destructive) {
-                configurationManager.clearAllBindings()
-            }
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All", role: .destructive) { cfg.clearAllBindings() }
         } message: {
             Text("Are you sure you want to remove all key bindings in the current profile? This cannot be undone.")
         }
     }
-    
-    // MARK: - Import/Export Logic
-    
+
     private func exportAllData() {
-        let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.json]
-        savePanel.canCreateDirectories = true
-        savePanel.isExtensionHidden = false
-        savePanel.title = "Export Sidepiece Configuration"
-        savePanel.message = "Choose where to save your backup"
-        savePanel.nameFieldStringValue = "sidepiece-backup-\(ISO8601DateFormatter().string(from: Date()).prefix(10)).json"
-        
-        savePanel.begin { response in
-            if response == .OK, let url = savePanel.url {
-                do {
-                    try configurationManager.exportUnifiedData(
-                        snippets: snippetRepository.snippets,
-                        categories: snippetRepository.categories,
-                        to: url
-                    )
-                    print("✅ Exported configuration to \(url.path)")
-                } catch {
-                    print("❌ Failed to export configuration: \(error)")
-                }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.title = "Export Sidepiece Configuration"
+        panel.message = "Choose where to save your backup"
+        panel.nameFieldStringValue = "sidepiece-backup-\(Date.now.formatted(.iso8601.year().month().day())).json"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try configurationManager.exportUnifiedData(
+                    snippets: snippetRepository.snippets,
+                    categories: snippetRepository.categories,
+                    to: url
+                )
+            } catch {
+                print("Sidepiece: export failed: \(error)")
             }
         }
     }
-    
+
     private func importAllData() {
-        let openPanel = NSOpenPanel()
-        openPanel.allowedContentTypes = [.json]
-        openPanel.allowsMultipleSelection = false
-        openPanel.canChooseDirectories = false
-        openPanel.canChooseFiles = true
-        openPanel.title = "Import Sidepiece Configuration"
-        openPanel.message = "Choose a Sidepiece backup file to restore"
-        
-        openPanel.begin { response in
-            if response == .OK, let url = openPanel.url {
-                do {
-                    let importedData = try configurationManager.importUnifiedData(from: url)
-                    snippetRepository.importData(
-                        snippets: importedData.snippets,
-                        categories: importedData.categories
-                    )
-                    print("✅ Imported configuration from \(url.path)")
-                } catch {
-                    print("❌ Failed to import configuration: \(error)")
-                }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.title = "Import Sidepiece Configuration"
+        panel.message = "Choose a Sidepiece backup file to restore"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                let data = try configurationManager.importUnifiedData(from: url)
+                snippetRepository.importData(snippets: data.snippets, categories: data.categories)
+            } catch {
+                print("Sidepiece: import failed: \(error)")
             }
         }
     }
 }
 
-struct AccessibilityStatusView: View {
-    @State private var hasPermission = false
-    @State private var timer: Timer?
-    
+private struct SettingsPanel<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.headline)
+            content
+        }
+        .padding()
+        .background(Color.spPanel)
+        .cornerRadius(12)
+    }
+}
+
+private struct Caption: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text).font(.caption).foregroundColor(Color.spMuted)
+    }
+}
+
+struct AccessibilityStatusView: View {
+    @ObservedObject private var hotkeys = HotkeyManager.shared
+
+    var body: some View {
+        if hotkeys.isAuthorized {
             HStack(spacing: 6) {
-                if hasPermission {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                    Text("Granted")
-                        .foregroundColor(.green)
-                } else {
-                    Button(action: {
-                        requestPermission()
-                    }) {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 8, height: 8)
-                            Text("Click to Authorize")
-                                .fontWeight(.medium)
-                            Image(systemName: "lock.fill")
-                                .font(.caption2)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(6)
-                        .foregroundColor(.red)
-                    }
-                    .buttonStyle(.plain)
-                }
+                Circle().fill(.green).frame(width: 8, height: 8)
+                Text("Granted").foregroundColor(.green)
             }
-            
-            if !hasPermission {
-                Button(action: {
-                    let url = URL(fileURLWithPath: "/Users/kristian/dev/kt-projects/sidepiece/build/Debug/Sidepiece.app")
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
-                }) {
+        } else {
+            VStack(alignment: .trailing, spacing: 4) {
+                Button(action: requestPermission) {
+                    HStack(spacing: 6) {
+                        Circle().fill(.red).frame(width: 8, height: 8)
+                        Text("Click to Authorize").fontWeight(.medium)
+                        Image(systemName: "lock.fill").font(.caption2)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(6)
+                    .foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+                } label: {
                     Text("App not in list? Click to show in Finder, then drag it in.")
                         .font(.system(size: 9))
                         .foregroundColor(Color.spMuted)
@@ -621,29 +493,11 @@ struct AccessibilityStatusView: View {
                 .buttonStyle(.plain)
             }
         }
-        .onAppear { 
-            checkPermission()
-            // Auto-check every 2 seconds while settings are open
-            timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                checkPermission()
-            }
-        }
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
-        }
     }
-    
-    private func checkPermission() {
-        hasPermission = HotkeyManager.shared.checkPermissions()
-    }
-    
+
     private func requestPermission() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
-        
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-        NSWorkspace.shared.open(url)
+        AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 }
 

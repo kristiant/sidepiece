@@ -55,11 +55,6 @@ final class ConfigurationManager: ObservableObject {
 
     // MARK: - Configuration
     
-    func updateConfiguration(_ configuration: AppConfiguration) {
-        self.configuration = configuration
-        saveConfiguration()
-    }
-    
     private func saveConfiguration() {
         Persistence.save(configuration, to: configURL)
     }
