@@ -1,3 +1,4 @@
+import Carbon.HIToolbox
 import Foundation
 import AppKit
 import OSLog
@@ -57,7 +58,6 @@ final class SidepieceEngine: ObservableObject {
         if key == .clear {
             navigation.popFolder()
             hud.popFolder()
-            // Refresh peak to show the parent level's contents.
             if hud.isPeaking { peakSnippets(toggle: false) }
             return
         }
@@ -67,11 +67,7 @@ final class SidepieceEngine: ObservableObject {
 
         switch items[index] {
         case .folder(let sub):
-            navigation.enterFolder(sub.id, name: sub.name)
-            hud.pushFolder(id: sub.id, name: sub.name)
-            if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
-                peakSnippets(toggle: false)
-            }
+            open(sub)
         case .snippet(let snippet):
             executeSnippet(snippet)
             if configManager.configuration.autoExitFolderAfterSelection {
@@ -89,23 +85,13 @@ final class SidepieceEngine: ObservableObject {
         case .snippet(let id):
             if let snippet = snippetRepo.getSnippet(id: id) { executeSnippet(snippet) }
         case .folder(let id):
-            if let folder = snippetRepo.getCategory(id: id) {
-                navigation.enterFolder(id, name: folder.name)
-                hud.pushFolder(id: id, name: folder.name)
-                if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
-                    peakSnippets(toggle: false)
-                }
-            }
+            snippetRepo.getCategory(id: id).map(open)
         case .switchProfile(let id):
             configManager.activeProfileId = id
-            if let active = configManager.activeProfile {
-                hud.showFeedback(message: "Profile: \(active.name)", icon: "person.2.fill")
-            }
+            announceProfile()
         case .cycleProfile(let direction):
             configManager.cycleProfiles(direction: direction)
-            if let active = configManager.activeProfile {
-                hud.showFeedback(message: "Profile: \(active.name)", icon: "person.2.fill")
-            }
+            announceProfile()
         case .appFunction(let function):
             handleAppFunction(function)
         case .launchApp(let bundleId):
@@ -113,6 +99,19 @@ final class SidepieceEngine: ObservableObject {
         case .runCommand(let command):
             runShellCommand(command)
         }
+    }
+
+    private func open(_ folder: SnippetCategory) {
+        navigation.enterFolder(folder.id, name: folder.name)
+        hud.pushFolder(id: folder.id, name: folder.name)
+        if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
+            peakSnippets(toggle: false)
+        }
+    }
+
+    private func announceProfile() {
+        guard let active = configManager.activeProfile else { return }
+        hud.showFeedback(message: "Profile: \(active.name)", icon: "person.2.fill")
     }
 
     /// Navigate to a breadcrumb ancestor. depth == -1 returns to root.
@@ -128,10 +127,10 @@ final class SidepieceEngine: ObservableObject {
         if configManager.configuration.playSoundOnCopy { NSSound(named: "Submarine")?.play() }
         if configManager.configuration.autoPaste {
             Task {
-                try? await Task.sleep(nanoseconds: 100_000_000)
+                try? await Task.sleep(for: .milliseconds(100))
                 Clipboard.paste()
                 if configManager.configuration.autoEnterAfterPaste {
-                    try? await Task.sleep(nanoseconds: 50_000_000)
+                    try? await Task.sleep(for: .milliseconds(50))
                     Clipboard.typeEnter()
                 }
             }
@@ -142,9 +141,9 @@ final class SidepieceEngine: ObservableObject {
     private func handleAppFunction(_ function: KeyBinding.AppFunction) {
         switch function {
         case .peakSnippets:   peakSnippets()
-        case .cycleWindows:   cycleFrontmostAppWindows()
-        case .appExpose:      triggerAppExpose()
-        case .missionControl: triggerMissionControl()
+        case .cycleWindows:   Keyboard.press(kVK_ANSI_Grave, flags: .maskCommand, tap: .cghidEventTap)
+        case .appExpose:      Keyboard.press(kVK_DownArrow, flags: .maskControl, tap: .cghidEventTap)
+        case .missionControl: Keyboard.press(kVK_UpArrow, flags: .maskControl, tap: .cghidEventTap)
         }
     }
 
@@ -154,9 +153,7 @@ final class SidepieceEngine: ObservableObject {
             hud.showFeedback(message: "App not found", icon: "exclamationmark.triangle.fill")
             return
         }
-        let name = Bundle(url: appURL)?.infoDictionary?["CFBundleDisplayName"] as? String
-            ?? Bundle(url: appURL)?.infoDictionary?["CFBundleName"] as? String
-            ?? bundleId
+        let name = FileManager.default.displayName(atPath: appURL.path)
         NSWorkspace.shared.open(appURL)
         hud.showFeedback(message: "Opening \(name)", icon: "arrow.up.forward.app.fill")
         logger.info("Launching \(bundleId) at \(appURL.path)")
@@ -170,7 +167,6 @@ final class SidepieceEngine: ObservableObject {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/sh")
             process.arguments = ["-c", command]
-            // Inherit the user's environment so PATH, HOME etc. are available.
             process.environment = ProcessInfo.processInfo.environment
             do {
                 try process.run()
@@ -181,35 +177,6 @@ final class SidepieceEngine: ObservableObject {
                 await self?.logger.error("Command failed to launch: \(error)")
             }
         }
-    }
-
-    /// Simulates ⌘` — macOS "Cycle Through Windows".
-    private func cycleFrontmostAppWindows() {
-        postSystemKey(virtualKey: 0x32, flags: .maskCommand)  // kVK_ANSI_Grave
-        logger.info("Cycling windows via ⌘`")
-    }
-
-    /// Simulates ⌃↓ — macOS "App Exposé" (show all windows of the frontmost app).
-    private func triggerAppExpose() {
-        postSystemKey(virtualKey: 0x7D, flags: .maskControl)  // kVK_DownArrow
-        logger.info("Triggering App Exposé via ⌃↓")
-    }
-
-    /// Simulates ⌃↑ — macOS "Mission Control" (show all windows of all apps).
-    private func triggerMissionControl() {
-        postSystemKey(virtualKey: 0x7E, flags: .maskControl)  // kVK_UpArrow
-        logger.info("Triggering Mission Control via ⌃↑")
-    }
-
-    /// Posts a synthetic key-down + key-up pair at the HID event tap level.
-    private func postSystemKey(virtualKey: CGKeyCode, flags: CGEventFlags) {
-        let source  = CGEventSource(stateID: .hidSystemState)
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: true)
-        let keyUp   = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: false)
-        keyDown?.flags = flags
-        keyUp?.flags   = flags
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
     }
 
     func peakSnippets(toggle: Bool = true) {
