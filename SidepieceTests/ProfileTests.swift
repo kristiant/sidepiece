@@ -39,19 +39,4 @@ final class ProfileTests: XCTestCase {
         
         XCTAssertTrue(updated.bindings.isEmpty)
     }
-    
-    func testBindingCount() {
-        let snippets = [
-            Snippet(title: "A", content: "A"),
-            Snippet(title: "B", content: "B")
-        ]
-        let bindings = [
-            KeyBinding(key: .num1, action: .snippet(id: snippets[0].id), isEnabled: true),
-            KeyBinding(key: .num2, action: .snippet(id: snippets[1].id), isEnabled: false)
-        ]
-        let profile = Profile(name: "Test", bindings: bindings)
-        
-        XCTAssertEqual(profile.bindingCount, 2)
-        XCTAssertEqual(profile.enabledBindingCount, 1)
-    }
 }

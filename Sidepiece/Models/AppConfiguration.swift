@@ -1,126 +1,76 @@
 import Foundation
 
-/// Global application settings
 struct AppConfiguration: Codable, Equatable {
-    
-    // MARK: - Properties
-    
-    var launchAtLogin: Bool
-    var showMenuBarIcon: Bool
-    var showHUD: Bool
-    var playSoundOnCopy: Bool
-    var showNotificationOnCopy: Bool
+    var launchAtLogin = false
+    var showMenuBarIcon = true
+    var showHUD = true
+    var playSoundOnCopy = true
+    var showNotificationOnCopy = false
     var activeProfileId: UUID?
-    var requireModifierKey: Bool
-    var modifierKey: ModifierKeyOption
-    var theme: AppTheme
-    var autoPaste: Bool
-    var autoEnterAfterPaste: Bool
-    var autoExitFolderMode: Bool
-    var autoExitFolderAfterSelection: Bool
-    var autoPeakFolderContents: Bool
-    /// Optional hotkey that triggers the HUD peak panel (for non-numpad keyboards).
+    var requireModifierKey = false
+    var modifierKey = ModifierKeyOption.fn
+    var theme = AppTheme.system
+    var autoPaste = true
+    var autoEnterAfterPaste = false
+    var autoExitFolderMode = true
+    var autoExitFolderAfterSelection = true
+    var autoPeakFolderContents = true
     var peakHotkey: NumpadKey?
-    
-    // MARK: - Initialisation
-    
-    init(
-        launchAtLogin: Bool = false,
-        showMenuBarIcon: Bool = true,
-        showHUD: Bool = true,
-        playSoundOnCopy: Bool = true,
-        showNotificationOnCopy: Bool = false,
-        activeProfileId: UUID? = nil,
-        requireModifierKey: Bool = false,
-        modifierKey: ModifierKeyOption = .fn,
-        theme: AppTheme = .system,
-        autoPaste: Bool = true,
-        autoEnterAfterPaste: Bool = false,
-        autoExitFolderMode: Bool = true,
-        autoExitFolderAfterSelection: Bool = true,
-        autoPeakFolderContents: Bool = true,
-        peakHotkey: NumpadKey? = nil
-    ) {
-        self.launchAtLogin = launchAtLogin
-        self.showMenuBarIcon = showMenuBarIcon
-        self.showHUD = showHUD
-        self.playSoundOnCopy = playSoundOnCopy
-        self.showNotificationOnCopy = showNotificationOnCopy
-        self.activeProfileId = activeProfileId
-        self.requireModifierKey = requireModifierKey
-        self.modifierKey = modifierKey
-        self.theme = theme
-        self.autoPaste = autoPaste
-        self.autoEnterAfterPaste = autoEnterAfterPaste
-        self.autoExitFolderMode = autoExitFolderMode
-        self.autoExitFolderAfterSelection = autoExitFolderAfterSelection
-        self.autoPeakFolderContents = autoPeakFolderContents
-        self.peakHotkey = peakHotkey
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
-        self.showMenuBarIcon = try container.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? true
-        self.showHUD = try container.decodeIfPresent(Bool.self, forKey: .showHUD) ?? true
-        self.playSoundOnCopy = try container.decodeIfPresent(Bool.self, forKey: .playSoundOnCopy) ?? true
-        self.showNotificationOnCopy = try container.decodeIfPresent(Bool.self, forKey: .showNotificationOnCopy) ?? false
-        self.activeProfileId = try container.decodeIfPresent(UUID.self, forKey: .activeProfileId)
-        self.requireModifierKey = try container.decodeIfPresent(Bool.self, forKey: .requireModifierKey) ?? false
-        self.modifierKey = try container.decodeIfPresent(ModifierKeyOption.self, forKey: .modifierKey) ?? .fn
-        self.theme = try container.decodeIfPresent(AppTheme.self, forKey: .theme) ?? .system
-        self.autoPaste = try container.decodeIfPresent(Bool.self, forKey: .autoPaste) ?? true
-        self.autoEnterAfterPaste = try container.decodeIfPresent(Bool.self, forKey: .autoEnterAfterPaste) ?? false
-        self.autoExitFolderMode = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderMode) ?? true
-        self.autoExitFolderAfterSelection = try container.decodeIfPresent(Bool.self, forKey: .autoExitFolderAfterSelection) ?? true
-        self.autoPeakFolderContents = try container.decodeIfPresent(Bool.self, forKey: .autoPeakFolderContents) ?? true
-        self.peakHotkey = try container.decodeIfPresent(NumpadKey.self, forKey: .peakHotkey)
-    }
-    
-    // MARK: - Default
-    
+
     static let `default` = AppConfiguration()
 }
 
-// MARK: - Modifier Key Options
+extension AppConfiguration {
+    /// Falls back to defaults for any key missing from older saved configs.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func load<T: Decodable>(_ key: CodingKeys, _ path: WritableKeyPath<Self, T>, into cfg: inout Self) throws {
+            if let v = try c.decodeIfPresent(T.self, forKey: key) { cfg[keyPath: path] = v }
+        }
+        var cfg = Self()
+        try load(.launchAtLogin, \.launchAtLogin, into: &cfg)
+        try load(.showMenuBarIcon, \.showMenuBarIcon, into: &cfg)
+        try load(.showHUD, \.showHUD, into: &cfg)
+        try load(.playSoundOnCopy, \.playSoundOnCopy, into: &cfg)
+        try load(.showNotificationOnCopy, \.showNotificationOnCopy, into: &cfg)
+        try load(.activeProfileId, \.activeProfileId, into: &cfg)
+        try load(.requireModifierKey, \.requireModifierKey, into: &cfg)
+        try load(.modifierKey, \.modifierKey, into: &cfg)
+        try load(.theme, \.theme, into: &cfg)
+        try load(.autoPaste, \.autoPaste, into: &cfg)
+        try load(.autoEnterAfterPaste, \.autoEnterAfterPaste, into: &cfg)
+        try load(.autoExitFolderMode, \.autoExitFolderMode, into: &cfg)
+        try load(.autoExitFolderAfterSelection, \.autoExitFolderAfterSelection, into: &cfg)
+        try load(.autoPeakFolderContents, \.autoPeakFolderContents, into: &cfg)
+        try load(.peakHotkey, \.peakHotkey, into: &cfg)
+        self = cfg
+    }
+}
 
 enum ModifierKeyOption: String, Codable, CaseIterable {
-    case fn = "fn"
-    case control = "control"
-    case option = "option"
-    case command = "command"
-    
+    case fn, control, option, command
+
     var displayName: String {
         switch self {
-        case .fn: return "Fn"
-        case .control: return "Control (⌃)"
-        case .option: return "Option (⌥)"
-        case .command: return "Command (⌘)"
+        case .fn: "Fn"
+        case .control: "Control (⌃)"
+        case .option: "Option (⌥)"
+        case .command: "Command (⌘)"
         }
     }
-    
+
     var symbol: String {
         switch self {
-        case .fn: return "fn"
-        case .control: return "⌃"
-        case .option: return "⌥"
-        case .command: return "⌘"
+        case .fn: "fn"
+        case .control: "⌃"
+        case .option: "⌥"
+        case .command: "⌘"
         }
     }
 }
 
-// MARK: - App Theme
-
 enum AppTheme: String, Codable, CaseIterable {
-    case system
-    case light
-    case dark
-    
-    var displayName: String {
-        switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
-        }
-    }
+    case system, light, dark
+
+    var displayName: String { rawValue.capitalized }
 }

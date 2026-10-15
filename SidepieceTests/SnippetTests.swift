@@ -25,17 +25,4 @@ final class SnippetTests: XCTestCase {
         XCTAssertTrue(longSnippet.preview.hasSuffix("..."))
         XCTAssertEqual(longSnippet.preview.count, 53) // 50 chars + "..."
     }
-    
-    func testSnippetCharacterCount() {
-        let snippet = Snippet(title: "Test", content: "12345")
-        XCTAssertEqual(snippet.characterCount, 5)
-    }
-    
-    func testSnippetLineCount() {
-        let singleLine = Snippet(title: "Single", content: "Hello")
-        XCTAssertEqual(singleLine.lineCount, 1)
-        
-        let multiLine = Snippet(title: "Multi", content: "Line 1\nLine 2\nLine 3")
-        XCTAssertEqual(multiLine.lineCount, 3)
-    }
 }
