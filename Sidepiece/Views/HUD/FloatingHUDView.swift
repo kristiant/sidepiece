@@ -62,9 +62,9 @@ struct FloatingHUDView: View {
 
             // 3-column grid in numpad order: 7 8 9 / 4 5 6 / 1 2 3 / 0
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), spacing: 4) {
-                ForEach(hudManager.peakingAssignments, id: \.key) { item in
-                    PeakItemButton(keySymbol: item.key, label: item.label) {
-                        SidepieceEngine.shared.trigger(item.numpadKey)
+                ForEach(hudManager.peakingAssignments) { item in
+                    PeakItemButton(keySymbol: item.key.symbol, label: item.label) {
+                        SidepieceEngine.shared.trigger(item.key)
                     }
                 }
             }
@@ -301,7 +301,6 @@ struct VisualEffectView: NSViewRepresentable {
             (id: UUID(), name: "Projects"),
             (id: UUID(), name: "Work")
         ]
-        vm.isVisible = true
         return vm
     }())
     .padding()

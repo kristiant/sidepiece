@@ -2,45 +2,34 @@ import AppKit
 import SwiftUI
 import Combine
 
-// Captures all HUD state properties that influence window sizing in one place.
 struct HUDWindowState: Equatable {
     let isPeaking: Bool
-    let hasFolderPath: Bool
-    let hasFeedback: Bool
+    let hasContent: Bool
 
-    /// True when the HUD is fully idle and only the small dot is visible.
-    var isIdleDot: Bool { !isPeaking && !hasFolderPath && !hasFeedback }
+    @MainActor
+    init(_ hud: HUDManager) {
+        self.init(isPeaking: hud.isPeaking, hasFolderPath: !hud.folderPath.isEmpty, hasFeedback: hud.feedbackMessage != nil)
+    }
+
+    init(isPeaking: Bool, hasFolderPath: Bool, hasFeedback: Bool) {
+        self.isPeaking = isPeaking
+        hasContent = hasFolderPath || hasFeedback
+    }
+
+    /// Idle size wraps the dot tightly, as any spare transparent area swallows clicks meant for apps behind it.
+    var size: CGSize {
+        if isPeaking { return CGSize(width: 300, height: 600) }
+        if hasContent { return CGSize(width: 300, height: 70) }
+        return CGSize(width: 40, height: 40)
+    }
 }
 
 final class HUDWindowController: NSWindowController {
-
+    private let edgePadding: CGFloat = 24
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Geometry constants
-
-    /// Full width used for the pill (with content) and peak panel.
-    private let windowWidth: CGFloat  = 300
-    /// Gap between the window edge and the screen edge.
-    private let edgePadding: CGFloat  = 24
-    /// Window height when the pill has content (breadcrumbs / feedback) but is not peaking.
-    private let pillHeight: CGFloat   = 70
-    /// Window height when the peak panel is open.
-    private let peakHeight: CGFloat   = 600
-    /// Window size when fully idle — just the dot.
-    ///
-    /// Calculated to tightly wrap the visible dot:
-    ///   • dot circle: 4 pt
-    ///   • capsule padding: 6 pt each side → capsule = 16 pt
-    ///   • VStack outer padding: 12 pt each side
-    ///   → total: 16 + 24 = 40 pt
-    ///
-    /// Keeping this tight is essential: any extra transparent area blocks
-    /// mouse events for the apps that sit behind the HUD window.
-    private let dotWindowSize: CGFloat = 40
-
-    // MARK: - Init
-
-    init(hudManager: HUDManager) {
+    @MainActor
+    init(hudManager hud: HUDManager) {
         let panel = NSPanel(
             contentRect: .init(x: 0, y: 0, width: 300, height: 70),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -51,62 +40,42 @@ final class HUDWindowController: NSWindowController {
         panel.backgroundColor = .clear
         panel.level = .mainMenu
         panel.hasShadow = false
-        panel.ignoresMouseEvents = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
 
-        let hudView = FloatingHUDView(hudManager: hudManager)
-            .tint(Color.spAccent)
-            .preferredColorScheme(.dark)
-        // Hosted inside a plain container so SwiftUI's safe-area and sizing updates
-        // never feed back into the window's constraint passes during resizes.
-        let hostingView = NSHostingView(rootView: hudView)
-        hostingView.sizingOptions = []
-        hostingView.autoresizingMask = [.width, .height]
+        // A plain container stops SwiftUI sizing from feeding back into window resizes.
+        let host = NSHostingView(rootView: FloatingHUDView(hudManager: hud).tint(Color.spAccent).preferredColorScheme(.dark))
+        host.sizingOptions = []
+        host.autoresizingMask = [.width, .height]
         let container = NSView()
-        container.addSubview(hostingView)
+        container.addSubview(host)
         panel.contentView = container
-        hostingView.frame = container.bounds
+        host.frame = container.bounds
 
         super.init(window: panel)
 
-        // Size the window correctly from the start.
-        let initial = HUDWindowState(
-            isPeaking: hudManager.isPeaking,
-            hasFolderPath: !hudManager.folderPath.isEmpty,
-            hasFeedback: hudManager.feedbackMessage != nil
-        )
-        updatePosition(state: initial)
+        updatePosition(state: HUDWindowState(hud))
 
-        // Resize whenever *any* of the three sizing-relevant properties change.
         Publishers.CombineLatest3(
-            hudManager.$isPeaking,
-            hudManager.$folderPath.map { !$0.isEmpty },
-            hudManager.$feedbackMessage.map { $0 != nil }
+            hud.$isPeaking,
+            hud.$folderPath.map { !$0.isEmpty },
+            hud.$feedbackMessage.map { $0 != nil }
         )
-        .map { HUDWindowState(isPeaking: $0, hasFolderPath: $1, hasFeedback: $2) }
+        .map(HUDWindowState.init)
         .removeDuplicates()
         .receive(on: RunLoop.main)
-        .sink { [weak self] state in
-            self?.updatePosition(state: state)
-        }
+        .sink { [weak self] in self?.updatePosition(state: $0) }
         .store(in: &cancellables)
 
-        // Show or hide the window whenever the stealth-mode setting changes.
         ConfigurationManager.shared.$configuration
             .map(\.showHUD)
             .removeDuplicates()
             .receive(on: RunLoop.main)
-            .sink { [weak self] showHUD in
+            .sink { [weak self] show in
                 guard let self else { return }
-                if showHUD {
-                    let currentState = HUDWindowState(
-                        isPeaking: hudManager.isPeaking,
-                        hasFolderPath: !hudManager.folderPath.isEmpty,
-                        hasFeedback: hudManager.feedbackMessage != nil
-                    )
-                    updatePosition(state: currentState)
+                if show {
+                    updatePosition(state: HUDWindowState(hud))
                     window?.orderFrontRegardless()
                 } else {
                     window?.orderOut(nil)
@@ -117,47 +86,14 @@ final class HUDWindowController: NSWindowController {
 
     required init?(coder: NSCoder) { fatalError("use init(hudManager:)") }
 
-    // MARK: - Positioning
-
-    func updatePosition(state: HUDWindowState) {
-        // Don't resize/show while in stealth mode.
-        guard ConfigurationManager.shared.configuration.showHUD else { return }
-        guard let screen = NSScreen.main else { return }
+    @MainActor
+    private func updatePosition(state: HUDWindowState) {
+        guard ConfigurationManager.shared.configuration.showHUD, let screen = NSScreen.main else { return }
         let f = screen.visibleFrame
-
-        let width:  CGFloat
-        let height: CGFloat
-
-        if state.isPeaking {
-            // Full peak panel
-            width  = windowWidth
-            height = peakHeight
-        } else if state.hasFolderPath || state.hasFeedback {
-            // Pill with visible content (breadcrumbs / feedback toast)
-            width  = windowWidth
-            height = pillHeight
-        } else {
-            // Idle — only the tiny dot is rendered.
-            // The window MUST be this small; a larger transparent window
-            // would silently eat mouse clicks in apps behind the HUD.
-            width  = dotWindowSize
-            height = dotWindowSize
-        }
-
+        let size = state.size
         window?.setFrame(
-            .init(
-                x: f.maxX - width  - edgePadding,
-                y: f.minY          + edgePadding,
-                width:  width,
-                height: height
-            ),
-            display: true,
-            animate: false
+            .init(x: f.maxX - size.width - edgePadding, y: f.minY + edgePadding, width: size.width, height: size.height),
+            display: true
         )
     }
-
-    // MARK: - Visibility
-
-    func show() { window?.orderFrontRegardless() }
-    func hide() { window?.orderOut(nil) }
 }

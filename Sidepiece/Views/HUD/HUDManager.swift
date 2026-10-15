@@ -4,18 +4,13 @@ import SwiftUI
 final class HUDManager: ObservableObject {
     static let shared = HUDManager()
 
-    /// Full folder path from root to the current active folder.
     @Published var folderPath: [(id: UUID, name: String)] = []
-    /// Convenience accessor — nil when at root.
-    var activeFolderName: String? { folderPath.last?.name }
-
     @Published var feedbackMessage: String?
     @Published var feedbackIcon: String?
-    @Published var isVisible = true
     @Published var isPeaking = false
     @Published var isPeakPaused = false
     @Published var peakProgress = 1.0
-    @Published var peakingAssignments: [(key: String, label: String, numpadKey: NumpadKey)] = []
+    @Published var peakingAssignments: [PeakItem] = []
 
     private var dismissTimer: Timer?
     private var countdownTimer: Timer?
@@ -36,7 +31,7 @@ final class HUDManager: ObservableObject {
 
     // MARK: - Peak
 
-    func peak(assignments: [(key: String, label: String, numpadKey: NumpadKey)], duration: TimeInterval = 5) {
+    func peak(assignments: [PeakItem], duration: TimeInterval = 5) {
         peakingAssignments = assignments
         peakDuration = duration
         peakElapsed = 0
@@ -56,17 +51,23 @@ final class HUDManager: ObservableObject {
 
     func togglePeakPause() {
         isPeakPaused.toggle()
-        isPeakPaused ? stopCountdown() : { lastTick = .now; startCountdown() }()
+        if isPeakPaused {
+            stopCountdown()
+        } else {
+            lastTick = .now
+            startCountdown()
+        }
     }
 
     // MARK: - Countdown
 
     private func startCountdown() {
         countdownTimer?.invalidate()
-        countdownTimer = .scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1 / 60, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
-        RunLoop.main.add(countdownTimer!, forMode: .common)
+        RunLoop.main.add(timer, forMode: .common)
+        countdownTimer = timer
     }
 
     private func stopCountdown() { countdownTimer?.invalidate(); countdownTimer = nil }
@@ -89,4 +90,11 @@ final class HUDManager: ObservableObject {
             withAnimation { self?.feedbackMessage = nil; self?.feedbackIcon = nil }
         }
     }
+}
+
+struct PeakItem: Identifiable {
+    let key: NumpadKey
+    let label: String
+
+    var id: NumpadKey { key }
 }

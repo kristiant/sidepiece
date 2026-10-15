@@ -216,26 +216,24 @@ final class SidepieceEngine: ObservableObject {
         if toggle && hud.isPeaking { hud.dismissPeak(); return }
 
         let keys = NumpadKey.folderSlots
-        let assignments: [(key: String, label: String, numpadKey: NumpadKey)]
-
+        let items: [PeakItem]
         if let folderId = navigation.currentFolderId {
-            let items = snippetRepo.getFolderContents(folderId: folderId)
-            assignments = zip(keys, items).compactMap { key, item in
-                item.name.isEmpty ? nil : (key.symbol, item.name.uppercased(), key)
+            items = zip(keys, snippetRepo.getFolderContents(folderId: folderId)).compactMap { key, item in
+                item.name.isEmpty ? nil : PeakItem(key: key, label: item.name.uppercased())
             }
         } else {
-            assignments = keys.compactMap { key in
-                guard let action = snippetRepo.getBinding(for: key)?.action else { return nil }
-                let label: String
-                switch action {
-                case .folder(let id): label = snippetRepo.getCategory(id: id)?.name ?? "FOLDER"
-                case .snippet(let id): label = snippetRepo.getSnippet(id: id)?.title ?? "SNIPPET"
-                default: label = action.displayName
-                }
-                return (key.symbol, label.uppercased(), key)
+            items = keys.compactMap { key in
+                snippetRepo.getBinding(for: key).map { PeakItem(key: key, label: peakLabel(for: $0.action).uppercased()) }
             }
         }
+        hud.peak(assignments: items)
+    }
 
-        hud.peak(assignments: assignments)
+    private func peakLabel(for action: KeyBinding.Action) -> String {
+        switch action {
+        case .folder(let id): snippetRepo.getCategory(id: id)?.name ?? "FOLDER"
+        case .snippet(let id): snippetRepo.getSnippet(id: id)?.title ?? "SNIPPET"
+        default: action.displayName
+        }
     }
 }
