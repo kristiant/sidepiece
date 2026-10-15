@@ -34,7 +34,7 @@ xcodebuild -project "$APP_NAME.xcodeproj" \
            -configuration Debug \
            -derivedDataPath ./DerivedData \
            CONFIGURATION_BUILD_DIR="$STABLE_BUILD_DIR" \
-           clean build
+           build
 
 # 4. Handle Permissions (Fixes the "Ghost Permission" bug)
 # Note: Automatic grant requires Full Disk Access and is usually blocked by SIP.
