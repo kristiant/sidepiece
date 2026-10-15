@@ -1,52 +1,33 @@
 import Foundation
 
-/// Internal utility for atomic JSON persistence with automatic backup of corrupted files
+/// Atomic JSON persistence. Unreadable files are moved aside as `.corrupt` and the fallback is used.
 enum Persistence {
-    
-    static func load<T: Decodable>(from url: URL, fallback: T? = nil, silent: Bool = true) -> T {
-        if FileManager.default.fileExists(atPath: url.path) {
-            do {
-                let data = try Data(contentsOf: url)
-                return try JSONDecoder().decode(T.self, from: data)
-            } catch {
-                if !silent {
-                    print("Sidepiece Error: Corruption detected in \(url.lastPathComponent). Archiving as .corrupt")
-                }
-                
-                // Backup corrupted file
-                let backupUrl = url.appendingPathExtension("corrupt")
-                try? FileManager.default.removeItem(at: backupUrl)
-                try? FileManager.default.moveItem(at: url, to: backupUrl)
-            }
-        }
-        
-        if let fallback = fallback { return fallback }
-        if let defaultable = T.self as? Defaultable.Type, let defaultValue = defaultable.defaultValue as? T {
-            return defaultValue
-        }
-        
-        fatalError("Sidepiece: Failed to load \(url.lastPathComponent) and no fallback for \(T.self)")
-    }
-    
-    static func save<T: Encodable>(_ value: T, to url: URL, pretty: Bool = false) {
+    static let dir: URL = {
+        let url = URL.applicationSupportDirectory.appending(path: "Sidepiece", directoryHint: .isDirectory)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }()
+
+    static func load<T: Decodable>(from url: URL, fallback: T) -> T {
+        guard let data = try? Data(contentsOf: url) else { return fallback }
         do {
-            let encoder = JSONEncoder()
-            if pretty {
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            }
-            let data = try encoder.encode(value)
-            try data.write(to: url, options: .atomic)
+            return try JSONDecoder().decode(T.self, from: data)
         } catch {
-            print("Sidepiece Error: Failed to save \(url.lastPathComponent): \(error)")
+            print("Sidepiece: archiving corrupt \(url.lastPathComponent): \(error)")
+            let backup = url.appendingPathExtension("corrupt")
+            try? FileManager.default.removeItem(at: backup)
+            try? FileManager.default.moveItem(at: url, to: backup)
+            return fallback
         }
     }
-}
 
-/// Helper protocol to avoid fatalErrors in load
-protocol Defaultable {
-    static var defaultValue: Self { get }
-}
-
-extension AppConfiguration: Defaultable {
-    static var defaultValue: AppConfiguration { .default }
+    static func save<T: Encodable>(_ value: T, to url: URL) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        do {
+            try encoder.encode(value).write(to: url, options: .atomic)
+        } catch {
+            print("Sidepiece: failed to save \(url.lastPathComponent): \(error)")
+        }
+    }
 }

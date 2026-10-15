@@ -34,6 +34,9 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         kVK_ANSI_5, kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9,
     ]
 
+    /// Digits in numpad layout order, top row first, used to slot folder contents onto keys.
+    static let folderSlots: [NumpadKey] = [.num7, .num8, .num9, .num4, .num5, .num6, .num1, .num2, .num3, .num0]
+
     var id: String { rawValue }
 
     var keyCode: UInt16 { UInt16(Self.keyCodes[self]!) }

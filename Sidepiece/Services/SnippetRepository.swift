@@ -16,10 +16,8 @@ final class SnippetRepository: ObservableObject {
         loadCategories()
     }
     
-    func getFolderContents(folderId: UUID) -> [Any] {
-        let subCats = getSubCategories(parentId: folderId)
-        let snips = getSnippets(in: folderId)
-        return subCats + snips
+    func getFolderContents(folderId: UUID) -> [FolderItem] {
+        getSubCategories(parentId: folderId).map(FolderItem.folder) + getSnippets(in: folderId).map(FolderItem.snippet)
     }
     
     var activeProfile: Profile? { configurationManager.activeProfile }
@@ -31,22 +29,13 @@ final class SnippetRepository: ObservableObject {
     var activeBindings: [KeyBinding] { activeProfile?.bindings ?? [] }
     
     func updateBinding(_ binding: KeyBinding) {
-        guard var profile = activeProfile else { return }
-        profile = profile.withBinding(binding)
-        configurationManager.updateProfile(profile)
+        guard let profile = activeProfile else { return }
+        configurationManager.updateProfile(profile.withBinding(binding))
     }
     
     func removeBinding(for key: NumpadKey) {
-        guard var profile = activeProfile else { return }
-        profile = profile.withoutBinding(for: key)
-        configurationManager.updateProfile(profile)
-    }
-    
-    func clearAllBindings() {
-        guard var profile = activeProfile else { return }
-        profile.bindings = []
-        profile.updatedAt = Date()
-        configurationManager.updateProfile(profile)
+        guard let profile = activeProfile else { return }
+        configurationManager.updateProfile(profile.withoutBinding(for: key))
     }
     
     func importData(snippets: [Snippet], categories: [SnippetCategory]) {
@@ -95,12 +84,9 @@ final class SnippetRepository: ObservableObject {
         categories[i] = category; saveCategories()
     }
     func deleteCategory(_ categoryId: UUID) {
-        // Remove snippets in this category? 
-        // For now just nullify their categoryId
         for i in snippets.indices where snippets[i].categoryId == categoryId {
             snippets[i].categoryId = nil
         }
-        // Also handle subcategories (move to parent's parent or root)
         let category = getCategory(id: categoryId)
         for i in categories.indices where categories[i].parentId == categoryId {
             categories[i].parentId = category?.parentId
@@ -121,52 +107,35 @@ final class SnippetRepository: ObservableObject {
     
     func moveCategory(_ categoryId: UUID, toParentId: UUID?) {
         // Prevent moving a category into itself or its own descendants
-        if let toId = toParentId, isDescendant(of: categoryId, target: toId) {
-            return
-        }
-        
+        if let toId = toParentId, isDescendant(of: categoryId, target: toId) { return }
         guard let index = categories.firstIndex(where: { $0.id == categoryId }) else { return }
         categories[index].parentId = toParentId
         saveCategories()
     }
     
     private func isDescendant(of categoryId: UUID, target: UUID) -> Bool {
-        if categoryId == target { return true }
-        let subCategories = getSubCategories(parentId: categoryId)
-        for sub in subCategories {
-            if isDescendant(of: sub.id, target: target) {
-                return true
-            }
-        }
-        return false
+        categoryId == target || getSubCategories(parentId: categoryId).contains { isDescendant(of: $0.id, target: target) }
     }
     
     // MARK: - Persistence
-    
-    private var appSupport: URL {
-        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Sidepiece")
-        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        return url
-    }
-    
-    private func loadSnippets() {
-        let url = appSupport.appendingPathComponent("snippets.json")
-        snippets = Persistence.load(from: url, fallback: Snippet.samples)
-    }
-    
-    private func saveSnippets() {
-        let url = appSupport.appendingPathComponent("snippets.json")
-        Persistence.save(snippets, to: url, pretty: true)
-    }
-    
-    private func loadCategories() {
-        let url = appSupport.appendingPathComponent("categories.json")
-        categories = Persistence.load(from: url, fallback: SnippetCategory.defaults)
-    }
-    
-    private func saveCategories() {
-        let url = appSupport.appendingPathComponent("categories.json")
-        Persistence.save(categories, to: url, pretty: true)
+
+    private let snippetsURL = Persistence.dir.appending(path: "snippets.json")
+    private let categoriesURL = Persistence.dir.appending(path: "categories.json")
+
+    private func loadSnippets() { snippets = Persistence.load(from: snippetsURL, fallback: Snippet.samples) }
+    private func saveSnippets() { Persistence.save(snippets, to: snippetsURL) }
+    private func loadCategories() { categories = Persistence.load(from: categoriesURL, fallback: SnippetCategory.defaults) }
+    private func saveCategories() { Persistence.save(categories, to: categoriesURL) }
+}
+
+enum FolderItem {
+    case folder(SnippetCategory)
+    case snippet(Snippet)
+
+    var name: String {
+        switch self {
+        case .folder(let c): c.name
+        case .snippet(let s): s.title
+        }
     }
 }

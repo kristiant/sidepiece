@@ -512,7 +512,7 @@ struct GeneralSettingsView: View {
         .alert("Clear All Bindings?", isPresented: $showingClearAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Clear All", role: .destructive) {
-                snippetRepository.clearAllBindings()
+                configurationManager.clearAllBindings()
             }
         } message: {
             Text("Are you sure you want to remove all key bindings in the current profile? This cannot be undone.")

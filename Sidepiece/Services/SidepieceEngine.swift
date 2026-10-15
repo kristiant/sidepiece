@@ -69,25 +69,21 @@ final class SidepieceEngine: ObservableObject {
         }
 
         let items = snippetRepo.getFolderContents(folderId: folderId)
-        let keys: [NumpadKey] = [.num7, .num8, .num9, .num4, .num5, .num6, .num1, .num2, .num3, .num0]
+        guard let index = NumpadKey.folderSlots.firstIndex(of: key), items.indices.contains(index) else { return }
 
-        guard let index = keys.firstIndex(of: key), index < items.count else { return }
-        let item = items[index]
-
-        if let subCategory = item as? SnippetCategory {
-            navigation.enterFolder(subCategory.id, name: subCategory.name)
-            hud.pushFolder(id: subCategory.id, name: subCategory.name)
-            // Always refresh the peak if it's already open — keeps displayed content
-            // accurate regardless of the autoPeakFolderContents preference.
+        switch items[index] {
+        case .folder(let sub):
+            navigation.enterFolder(sub.id, name: sub.name)
+            hud.pushFolder(id: sub.id, name: sub.name)
             if hud.isPeaking || configManager.configuration.autoPeakFolderContents {
                 peakSnippets(toggle: false)
             }
-        } else if let snippet = item as? Snippet {
+        case .snippet(let snippet):
             executeSnippet(snippet)
             if configManager.configuration.autoExitFolderAfterSelection {
                 navigation.exitFolder()
                 hud.clearFolderPath()
-                hud.dismissPeak()  // peak content is now stale after exiting folder
+                hud.dismissPeak()
             } else {
                 navigation.resetTimer()
             }
@@ -225,16 +221,13 @@ final class SidepieceEngine: ObservableObject {
     func peakSnippets(toggle: Bool = true) {
         if toggle && hud.isPeaking { hud.dismissPeak(); return }
 
-        let keys: [NumpadKey] = [.num7, .num8, .num9, .num4, .num5, .num6, .num1, .num2, .num3, .num0]
+        let keys = NumpadKey.folderSlots
         let assignments: [(key: String, label: String, numpadKey: NumpadKey)]
 
         if let folderId = navigation.currentFolderId {
             let items = snippetRepo.getFolderContents(folderId: folderId)
-            assignments = keys.enumerated().compactMap { idx, key in
-                guard idx < items.count else { return nil }
-                let item = items[idx]
-                let label = (item as? SnippetCategory)?.name ?? (item as? Snippet)?.title ?? ""
-                return label.isEmpty ? nil : (key.symbol, label.uppercased(), key)
+            assignments = zip(keys, items).compactMap { key, item in
+                item.name.isEmpty ? nil : (key.symbol, item.name.uppercased(), key)
             }
         } else {
             assignments = keys.compactMap { key in
