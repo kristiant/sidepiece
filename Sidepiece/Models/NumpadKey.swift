@@ -1,278 +1,94 @@
 import Carbon.HIToolbox
 
-/// Represents all supported numpad and function keys
 enum NumpadKey: String, Codable, CaseIterable, Identifiable {
-    
-    // MARK: - Number Keys
-    
-    case num0
-    case num1
-    case num2
-    case num3
-    case num4
-    case num5
-    case num6
-    case num7
-    case num8
-    case num9
-    
-    // MARK: - Operator Keys
-    
-    case clear
-    case equals
-    case divide
-    case multiply
-    case minus
-    case plus
-    case enter
-    case decimal
-    case del
-    case pageUp
-    case pageDown
-    case end
-    
-    // MARK: - Function Keys (F1-F19 for Apple Extended Keyboards)
-    
-    case f1
-    case f2
-    case f3
-    case f4
-    case f5
-    case f6
-    case f7
-    case f8
-    case f9
-    case f10
-    case f11
-    case f12
-    case f13
-    case f14
-    case f15
-    case f16
-    case f17
-    case f18
-    case f19
-    
-    // MARK: - Identifiable
-    
-    var id: String { rawValue }
-    
-    // MARK: - Display Properties
-    
-    /// Human-readable display name for the key
-    var displayName: String {
-        switch self {
-        case .num0: return "0"
-        case .num1: return "1"
-        case .num2: return "2"
-        case .num3: return "3"
-        case .num4: return "4"
-        case .num5: return "5"
-        case .num6: return "6"
-        case .num7: return "7"
-        case .num8: return "8"
-        case .num9: return "9"
-        case .clear: return "Clear"
-        case .equals: return "="
-        case .divide: return "/"
-        case .multiply: return "*"
-        case .minus: return "-"
-        case .plus: return "+"
-        case .enter: return "Enter"
-        case .decimal: return "."
-        case .del: return "Del"
-        case .pageUp: return "Page Up"
-        case .pageDown: return "Page Down"
-        case .end: return "End"
-        case .f1: return "F1"
-        case .f2: return "F2"
-        case .f3: return "F3"
-        case .f4: return "F4"
-        case .f5: return "F5"
-        case .f6: return "F6"
-        case .f7: return "F7"
-        case .f8: return "F8"
-        case .f9: return "F9"
-        case .f10: return "F10"
-        case .f11: return "F11"
-        case .f12: return "F12"
-        case .f13: return "F13"
-        case .f14: return "F14"
-        case .f15: return "F15"
-        case .f16: return "F16"
-        case .f17: return "F17"
-        case .f18: return "F18"
-        case .f19: return "F19"
-        }
-    }
-    
-    /// Symbol representation for compact display
-    var symbol: String {
-        switch self {
-        case .num0, .num1, .num2, .num3, .num4,
-             .num5, .num6, .num7, .num8, .num9:
-            return displayName
-        case .clear: return "CLR"
-        case .equals: return "="
-        case .divide: return "÷"
-        case .multiply: return "×"
-        case .minus: return "−"
-        case .plus: return "+"
-        case .enter: return "↵"
-        case .decimal: return "."
-        case .del: return "⌦"
-        case .pageUp: return "⇞"
-        case .pageDown: return "⇟"
-        case .end: return "End"
-        case .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10,
-             .f11, .f12, .f13, .f14, .f15, .f16, .f17, .f18, .f19:
-            return displayName
-        }
-    }
-    
-    /// The CGKeyCode for this key
-    var keyCode: UInt16 {
-        switch self {
-        case .num0: return UInt16(kVK_ANSI_Keypad0)
-        case .num1: return UInt16(kVK_ANSI_Keypad1)
-        case .num2: return UInt16(kVK_ANSI_Keypad2)
-        case .num3: return UInt16(kVK_ANSI_Keypad3)
-        case .num4: return UInt16(kVK_ANSI_Keypad4)
-        case .num5: return UInt16(kVK_ANSI_Keypad5)
-        case .num6: return UInt16(kVK_ANSI_Keypad6)
-        case .num7: return UInt16(kVK_ANSI_Keypad7)
-        case .num8: return UInt16(kVK_ANSI_Keypad8)
-        case .num9: return UInt16(kVK_ANSI_Keypad9)
-        case .clear: return UInt16(kVK_ANSI_KeypadClear)
-        case .equals: return UInt16(kVK_ANSI_KeypadEquals)
-        case .divide: return UInt16(kVK_ANSI_KeypadDivide)
-        case .multiply: return UInt16(kVK_ANSI_KeypadMultiply)
-        case .minus: return UInt16(kVK_ANSI_KeypadMinus)
-        case .plus: return UInt16(kVK_ANSI_KeypadPlus)
-        case .enter: return UInt16(kVK_ANSI_KeypadEnter)
-        case .decimal: return UInt16(kVK_ANSI_KeypadDecimal)
-        case .del: return UInt16(kVK_ForwardDelete)
-        case .pageUp: return UInt16(kVK_PageUp)
-        case .pageDown: return UInt16(kVK_PageDown)
-        case .end: return UInt16(kVK_End)
-        case .f1: return UInt16(kVK_F1)
-        case .f2: return UInt16(kVK_F2)
-        case .f3: return UInt16(kVK_F3)
-        case .f4: return UInt16(kVK_F4)
-        case .f5: return UInt16(kVK_F5)
-        case .f6: return UInt16(kVK_F6)
-        case .f7: return UInt16(kVK_F7)
-        case .f8: return UInt16(kVK_F8)
-        case .f9: return UInt16(kVK_F9)
-        case .f10: return UInt16(kVK_F10)
-        case .f11: return UInt16(kVK_F11)
-        case .f12: return UInt16(kVK_F12)
-        case .f13: return UInt16(kVK_F13)
-        case .f14: return UInt16(kVK_F14)
-        case .f15: return UInt16(kVK_F15)
-        case .f16: return UInt16(kVK_F16)
-        case .f17: return UInt16(kVK_F17)
-        case .f18: return UInt16(kVK_F18)
-        case .f19: return UInt16(kVK_F19)
-        }
-    }
-    
-    // MARK: - Initialisation from Key Code
-    
-    /// Creates a NumpadKey from a CGKeyCode
-    init?(keyCode: UInt16) {
-        switch Int(keyCode) {
-        case kVK_ANSI_Keypad0: self = .num0
-        case kVK_ANSI_Keypad1: self = .num1
-        case kVK_ANSI_Keypad2: self = .num2
-        case kVK_ANSI_Keypad3: self = .num3
-        case kVK_ANSI_Keypad4: self = .num4
-        case kVK_ANSI_Keypad5: self = .num5
-        case kVK_ANSI_Keypad6: self = .num6
-        case kVK_ANSI_Keypad7: self = .num7
-        case kVK_ANSI_Keypad8: self = .num8
-        case kVK_ANSI_Keypad9: self = .num9
-        case kVK_ANSI_KeypadClear: self = .clear
-        case kVK_ANSI_KeypadEquals: self = .equals
-        case kVK_ANSI_KeypadDivide: self = .divide
-        case kVK_ANSI_KeypadMultiply: self = .multiply
-        case kVK_ANSI_KeypadMinus: self = .minus
-        case kVK_ANSI_KeypadPlus: self = .plus
-        case kVK_ANSI_KeypadEnter: self = .enter
-        case kVK_ANSI_KeypadDecimal: self = .decimal
-        case kVK_ForwardDelete: self = .del
-        case kVK_PageUp: self = .pageUp
-        case kVK_PageDown: self = .pageDown
-        case kVK_End: self = .end
-        case kVK_F1: self = .f1
-        case kVK_F2: self = .f2
-        case kVK_F3: self = .f3
-        case kVK_F4: self = .f4
-        case kVK_F5: self = .f5
-        case kVK_F6: self = .f6
-        case kVK_F7: self = .f7
-        case kVK_F8: self = .f8
-        case kVK_F9: self = .f9
-        case kVK_F10: self = .f10
-        case kVK_F11: self = .f11
-        case kVK_F12: self = .f12
-        case kVK_F13: self = .f13
-        case kVK_F14: self = .f14
-        case kVK_F15: self = .f15
-        case kVK_F16: self = .f16
-        case kVK_F17: self = .f17
-        case kVK_F18: self = .f18
-        case kVK_F19: self = .f19
-        default: return nil
-        }
-    }
+    case num0, num1, num2, num3, num4, num5, num6, num7, num8, num9
+    case clear, equals, divide, multiply, minus, plus, enter, decimal, del, pageUp, pageDown, end
+    case f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19
 
-    // MARK: - Number Row Mapping
-
-    /// Maps a regular keyboard number-row key code to its numpad equivalent.
-    /// Used to handle key presses while the HUD peak panel is active,
-    /// so non-numpad keyboards can still trigger actions.
-    init?(numberRowKeyCode: UInt16) {
-        switch Int(numberRowKeyCode) {
-        case kVK_ANSI_0: self = .num0
-        case kVK_ANSI_1: self = .num1
-        case kVK_ANSI_2: self = .num2
-        case kVK_ANSI_3: self = .num3
-        case kVK_ANSI_4: self = .num4
-        case kVK_ANSI_5: self = .num5
-        case kVK_ANSI_6: self = .num6
-        case kVK_ANSI_7: self = .num7
-        case kVK_ANSI_8: self = .num8
-        case kVK_ANSI_9: self = .num9
-        default: return nil
-        }
-    }
-    
-    // MARK: - Grouping
-    
-    /// Groups keys by their category for UI display
     enum Category: String, CaseIterable {
         case numbers = "Numbers"
         case operators = "Operators"
         case functionKeys = "Function Keys"
     }
-    
+
+    private static let keyCodes: [NumpadKey: Int] = [
+        .num0: kVK_ANSI_Keypad0, .num1: kVK_ANSI_Keypad1, .num2: kVK_ANSI_Keypad2,
+        .num3: kVK_ANSI_Keypad3, .num4: kVK_ANSI_Keypad4, .num5: kVK_ANSI_Keypad5,
+        .num6: kVK_ANSI_Keypad6, .num7: kVK_ANSI_Keypad7, .num8: kVK_ANSI_Keypad8,
+        .num9: kVK_ANSI_Keypad9,
+        .clear: kVK_ANSI_KeypadClear, .equals: kVK_ANSI_KeypadEquals,
+        .divide: kVK_ANSI_KeypadDivide, .multiply: kVK_ANSI_KeypadMultiply,
+        .minus: kVK_ANSI_KeypadMinus, .plus: kVK_ANSI_KeypadPlus,
+        .enter: kVK_ANSI_KeypadEnter, .decimal: kVK_ANSI_KeypadDecimal,
+        .del: kVK_ForwardDelete, .pageUp: kVK_PageUp, .pageDown: kVK_PageDown, .end: kVK_End,
+        .f1: kVK_F1, .f2: kVK_F2, .f3: kVK_F3, .f4: kVK_F4, .f5: kVK_F5,
+        .f6: kVK_F6, .f7: kVK_F7, .f8: kVK_F8, .f9: kVK_F9, .f10: kVK_F10,
+        .f11: kVK_F11, .f12: kVK_F12, .f13: kVK_F13, .f14: kVK_F14, .f15: kVK_F15,
+        .f16: kVK_F16, .f17: kVK_F17, .f18: kVK_F18, .f19: kVK_F19,
+    ]
+
+    private static let byKeyCode = Dictionary(uniqueKeysWithValues: keyCodes.map { ($1, $0) })
+
+    private static let numberRow = [
+        kVK_ANSI_0, kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3, kVK_ANSI_4,
+        kVK_ANSI_5, kVK_ANSI_6, kVK_ANSI_7, kVK_ANSI_8, kVK_ANSI_9,
+    ]
+
+    var id: String { rawValue }
+
+    var keyCode: UInt16 { UInt16(Self.keyCodes[self]!) }
+
+    init?(keyCode: UInt16) {
+        guard let key = Self.byKeyCode[Int(keyCode)] else { return nil }
+        self = key
+    }
+
+    /// Maps a number-row key to its numpad twin so keyboards without a numpad can drive the HUD.
+    init?(numberRowKeyCode: UInt16) {
+        guard let digit = Self.numberRow.firstIndex(of: Int(numberRowKeyCode)) else { return nil }
+        self = Self.allCases[digit]
+    }
+
     var category: Category {
         switch self {
-        case .num0, .num1, .num2, .num3, .num4,
-             .num5, .num6, .num7, .num8, .num9:
-            return .numbers
-        case .clear, .equals, .divide, .multiply,
-             .minus, .plus, .enter, .decimal,
-             .del, .pageUp, .pageDown, .end:
-            return .operators
-        case .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10,
-             .f11, .f12, .f13, .f14, .f15, .f16, .f17, .f18, .f19:
-            return .functionKeys
+        case .num0, .num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9: .numbers
+        case .clear, .equals, .divide, .multiply, .minus, .plus, .enter, .decimal, .del, .pageUp, .pageDown, .end: .operators
+        default: .functionKeys
         }
     }
-    
-    /// All keys in a specific category
+
+    var displayName: String {
+        switch self {
+        case .clear: "Clear"
+        case .equals: "="
+        case .divide: "/"
+        case .multiply: "*"
+        case .minus: "-"
+        case .plus: "+"
+        case .enter: "Enter"
+        case .decimal: "."
+        case .del: "Del"
+        case .pageUp: "Page Up"
+        case .pageDown: "Page Down"
+        case .end: "End"
+        default: category == .numbers ? String(rawValue.dropFirst(3)) : rawValue.uppercased()
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .clear: "CLR"
+        case .divide: "÷"
+        case .multiply: "×"
+        case .minus: "−"
+        case .enter: "↵"
+        case .del: "⌦"
+        case .pageUp: "⇞"
+        case .pageDown: "⇟"
+        default: displayName
+        }
+    }
+
     static func keys(in category: Category) -> [NumpadKey] {
         allCases.filter { $0.category == category }
     }

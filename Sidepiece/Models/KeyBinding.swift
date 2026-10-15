@@ -118,9 +118,3 @@ struct KeyBinding: Identifiable, Codable, Equatable {
     }
 }
 
-// MARK: - Helper for legacy constructors
-extension KeyBinding {
-    init(key: NumpadKey, snippet: Snippet) {
-        self.init(key: key, action: .snippet(id: snippet.id))
-    }
-}

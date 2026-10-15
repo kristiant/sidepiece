@@ -22,17 +22,17 @@ final class ProfileTests: XCTestCase {
     func testAddBinding() {
         let profile = Profile(name: "Test")
         let snippet = Snippet(title: "Test", content: "Content")
-        let binding = KeyBinding(key: .num1, snippet: snippet)
+        let binding = KeyBinding(key: .num1, action: .snippet(id: snippet.id))
         
         let updated = profile.withBinding(binding)
         
         XCTAssertEqual(updated.bindings.count, 1)
-        XCTAssertEqual(updated.binding(for: .num1)?.snippet.title, "Test")
+        XCTAssertEqual(updated.binding(for: .num1)?.action, .snippet(id: snippet.id))
     }
     
     func testRemoveBinding() {
         let snippet = Snippet(title: "Test", content: "Content")
-        let binding = KeyBinding(key: .num1, snippet: snippet)
+        let binding = KeyBinding(key: .num1, action: .snippet(id: snippet.id))
         let profile = Profile(name: "Test", bindings: [binding])
         
         let updated = profile.withoutBinding(for: .num1)
@@ -46,8 +46,8 @@ final class ProfileTests: XCTestCase {
             Snippet(title: "B", content: "B")
         ]
         let bindings = [
-            KeyBinding(key: .num1, snippet: snippets[0], isEnabled: true),
-            KeyBinding(key: .num2, snippet: snippets[1], isEnabled: false)
+            KeyBinding(key: .num1, action: .snippet(id: snippets[0].id), isEnabled: true),
+            KeyBinding(key: .num2, action: .snippet(id: snippets[1].id), isEnabled: false)
         ]
         let profile = Profile(name: "Test", bindings: bindings)
         

@@ -84,7 +84,7 @@ extension Profile {
         let numpadKeys: [NumpadKey] = [.num1, .num2, .num3, .num4, .num5, .num6]
         
         for (index, key) in numpadKeys.enumerated() where index < samples.count {
-            let binding = KeyBinding(key: key, snippet: samples[index])
+            let binding = KeyBinding(key: key, action: .snippet(id: samples[index].id))
             bindings.append(binding)
         }
         
