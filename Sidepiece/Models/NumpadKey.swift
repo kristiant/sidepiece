@@ -2,7 +2,7 @@ import Carbon.HIToolbox
 
 enum NumpadKey: String, Codable, CaseIterable, Identifiable {
     case num0, num1, num2, num3, num4, num5, num6, num7, num8, num9
-    case clear, equals, divide, multiply, minus, plus, enter, decimal, del, pageUp, pageDown, end
+    case clear, equals, divide, multiply, minus, plus, enter, decimal, insert, del, home, end, pageUp, pageDown
     case f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19
 
     enum Category: String, CaseIterable {
@@ -20,7 +20,8 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         .divide: kVK_ANSI_KeypadDivide, .multiply: kVK_ANSI_KeypadMultiply,
         .minus: kVK_ANSI_KeypadMinus, .plus: kVK_ANSI_KeypadPlus,
         .enter: kVK_ANSI_KeypadEnter, .decimal: kVK_ANSI_KeypadDecimal,
-        .del: kVK_ForwardDelete, .pageUp: kVK_PageUp, .pageDown: kVK_PageDown, .end: kVK_End,
+        .insert: kVK_Help, .del: kVK_ForwardDelete, .home: kVK_Home, .end: kVK_End,
+        .pageUp: kVK_PageUp, .pageDown: kVK_PageDown,
         .f1: kVK_F1, .f2: kVK_F2, .f3: kVK_F3, .f4: kVK_F4, .f5: kVK_F5,
         .f6: kVK_F6, .f7: kVK_F7, .f8: kVK_F8, .f9: kVK_F9, .f10: kVK_F10,
         .f11: kVK_F11, .f12: kVK_F12, .f13: kVK_F13, .f14: kVK_F14, .f15: kVK_F15,
@@ -55,7 +56,7 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
     var category: Category {
         switch self {
         case .num0, .num1, .num2, .num3, .num4, .num5, .num6, .num7, .num8, .num9: .numbers
-        case .clear, .equals, .divide, .multiply, .minus, .plus, .enter, .decimal, .del, .pageUp, .pageDown, .end: .operators
+        case .clear, .equals, .divide, .multiply, .minus, .plus, .enter, .decimal, .insert, .del, .home, .end, .pageUp, .pageDown: .operators
         default: .functionKeys
         }
     }
@@ -70,7 +71,9 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .plus: "+"
         case .enter: "Enter"
         case .decimal: "."
+        case .insert: "Insert"
         case .del: "Del"
+        case .home: "Home"
         case .pageUp: "Page Up"
         case .pageDown: "Page Down"
         case .end: "End"
@@ -86,6 +89,8 @@ enum NumpadKey: String, Codable, CaseIterable, Identifiable {
         case .minus: "−"
         case .enter: "↵"
         case .del: "⌦"
+        case .home: "↖"
+        case .end: "↘"
         case .pageUp: "⇞"
         case .pageDown: "⇟"
         default: displayName

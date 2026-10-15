@@ -20,7 +20,7 @@ final class NumpadKeyTests: XCTestCase {
         XCTAssertEqual(numbers.count, 10)
         
         let operators = NumpadKey.keys(in: .operators)
-        XCTAssertEqual(operators.count, 12)
+        XCTAssertEqual(operators.count, 14)
         
         let functionKeys = NumpadKey.keys(in: .functionKeys)
         XCTAssertEqual(functionKeys.count, 19)
