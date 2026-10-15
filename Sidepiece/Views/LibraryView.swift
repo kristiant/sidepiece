@@ -7,35 +7,30 @@ struct LibraryView: View {
     
     @State private var navigationPath: [SnippetCategory] = []
     @State private var isShowingCreateFolder = false
-    @State private var isShowingCreateSnippet = false
-    @State private var targetCategoryIdForNewSnippet: UUID? = nil
     @State private var newFolderName = ""
-    @State private var editingSnippet: Snippet? = nil
-    @State private var assigningSnippet: Snippet? = nil
+    @State private var editingSnippet: Snippet?
+    @State private var assigningSnippet: Snippet?
     @State private var searchText = ""
-    
-    var currentFolder: SnippetCategory? {
-        navigationPath.last
+
+    private var currentFolder: SnippetCategory? { navigationPath.last }
+
+    private var folders: [SnippetCategory] {
+        snippetRepository.categories.filter { $0.parentId == currentFolder?.id }
     }
-    
-    var subCategories: [SnippetCategory] {
-        snippetRepository.getSubCategories(parentId: currentFolder?.id ?? UUID())
+
+    private var localSnippets: [Snippet] {
+        snippetRepository.snippets.filter { $0.categoryId == currentFolder?.id }
     }
-    
-    var rootCategories: [SnippetCategory] {
-        snippetRepository.categories.filter { $0.parentId == nil }
-    }
-    
-    var localSnippets: [Snippet] {
-        if let folder = currentFolder {
-            return snippetRepository.getSnippets(in: folder.id)
-        } else {
-            return snippetRepository.snippets.filter { $0.categoryId == nil }
+
+    private var searchResults: [Snippet] {
+        guard !searchText.isEmpty else { return snippetRepository.snippets }
+        return snippetRepository.snippets.filter {
+            $0.title.localizedCaseInsensitiveContains(searchText) || $0.content.localizedCaseInsensitiveContains(searchText)
         }
     }
-    
-    var displayedSnippets: [Snippet] {
-        snippetRepository.snippets
+
+    private func newSnippet(in folderId: UUID? = nil) {
+        editingSnippet = Snippet(title: "", content: "", categoryId: folderId)
     }
     
     var body: some View {
@@ -56,14 +51,11 @@ struct LibraryView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .sheet(isPresented: $isShowingCreateFolder) {
+        .sheet(isPresented: $isShowingCreateFolder, onDismiss: { newFolderName = "" }) {
             createFolderSheet
         }
         .sheet(item: $editingSnippet) { snippet in
             SnippetEditorSheet(snippet: snippet, repository: snippetRepository)
-        }
-        .sheet(isPresented: $isShowingCreateSnippet) {
-            SnippetEditorSheet(snippet: Snippet(title: "", content: "", categoryId: targetCategoryIdForNewSnippet), repository: snippetRepository)
         }
         .sheet(item: $assigningSnippet) { snippet in
             HotkeyPickerSheet(snippet: snippet, snippetRepository: snippetRepository)
@@ -122,7 +114,7 @@ struct LibraryView: View {
             .background(Color.spPanelElevated)
             .cornerRadius(6)
             
-            Button(action: { isShowingCreateSnippet = true }) {
+            Button { newSnippet() } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color.spAccent)
@@ -137,15 +129,9 @@ struct LibraryView: View {
         .frame(height: 44)
     }
     
-    private func bind(_ snippet: Snippet) {
-        assigningSnippet = snippet
-    }
-    
     private var folderList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                let folders = currentFolder == nil ? rootCategories : subCategories
-
                 if !folders.isEmpty {
                     sectionHeader("FOLDERS")
                         .padding(.top, 4)
@@ -200,8 +186,7 @@ struct LibraryView: View {
             .contentShape(Rectangle())
             .contextMenu {
                 Button {
-                    targetCategoryIdForNewSnippet = currentFolder?.id
-                    isShowingCreateSnippet = true
+                    newSnippet(in: currentFolder?.id)
                 } label: {
                     Label("New Snippet", systemImage: "doc.badge.plus")
                 }
@@ -221,11 +206,8 @@ struct LibraryView: View {
     private var snippetList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                let snippets = searchText.isEmpty ? displayedSnippets : snippetRepository.snippets.filter {
-                    $0.title.lowercased().contains(searchText.lowercased()) ||
-                    $0.content.lowercased().contains(searchText.lowercased())
-                }
-                
+                let snippets = searchResults
+
                 if searchText.isEmpty {
                     sectionHeader("SNIPS")
                 }
@@ -249,14 +231,7 @@ struct LibraryView: View {
                             .font(.title2)
                             .foregroundColor(Color.spMuted)
                         
-                        let emptyMsg: String = {
-                            if !searchText.isEmpty {
-                                return "No results for \"\(searchText)\""
-                            }
-                            return "No snippets yet"
-                        }()
-                        
-                        Text(emptyMsg)
+                        Text(searchText.isEmpty ? "No snippets yet" : "No results for \"\(searchText)\"")
                             .font(.caption)
                             .foregroundColor(Color.spMuted)
                             .multilineTextAlignment(.center)
@@ -287,7 +262,7 @@ struct LibraryView: View {
             onDelete: { snippetRepository.deleteSnippet(snippet) }
         )
         .contextMenu {
-            Button { bind(snippet) } label: { Label("Bind", systemImage: "keyboard") }
+            Button { assigningSnippet = snippet } label: { Label("Bind", systemImage: "keyboard") }
             Divider()
             Button(role: .destructive) { snippetRepository.deleteSnippet(snippet) } label: { Label("Delete", systemImage: "trash") }
         }
@@ -309,8 +284,7 @@ struct LibraryView: View {
         }
         return true
     }
-    
-    
+
     private var createFolderSheet: some View {
         VStack(spacing: 20) {
             Text("Create New Folder")
@@ -320,22 +294,14 @@ struct LibraryView: View {
                 .textFieldStyle(.roundedBorder)
             
             HStack {
-                Button("Cancel") {
-                    isShowingCreateFolder = false
-                    newFolderName = ""
-                }
+                Button("Cancel") { isShowingCreateFolder = false }
                 .keyboardShortcut(.escape, modifiers: [])
                 
                 Spacer()
                 
                 Button("Create") {
-                    let newCategory = SnippetCategory(
-                        name: newFolderName,
-                        parentId: currentFolder?.id
-                    )
-                    snippetRepository.addCategory(newCategory)
+                    snippetRepository.addCategory(SnippetCategory(name: newFolderName, parentId: currentFolder?.id))
                     isShowingCreateFolder = false
-                    newFolderName = ""
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .buttonStyle(.borderedProminent)
@@ -446,7 +412,7 @@ struct SnippetLibraryRow: View {
                     .lineLimit(1)
                 
                 HStack(spacing: 6) {
-                    if let categoryName = categoryName {
+                    if let categoryName {
                         Text(categoryName)
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white)
@@ -549,8 +515,7 @@ struct SnippetEditorSheet: View {
                     var up = snippet
                     up.title = title
                     up.content = content
-                    if repository.getSnippet(id: up.id) != nil { repository.updateSnippet(up) }
-                    else { repository.addSnippet(up) }
+                    repository.getSnippet(id: up.id) == nil ? repository.addSnippet(up) : repository.updateSnippet(up)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)

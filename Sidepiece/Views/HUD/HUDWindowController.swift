@@ -59,7 +59,15 @@ final class HUDWindowController: NSWindowController {
         let hudView = FloatingHUDView(hudManager: hudManager)
             .tint(Color.spAccent)
             .preferredColorScheme(.dark)
-        panel.contentView = NSHostingView(rootView: hudView)
+        // Hosted inside a plain container so SwiftUI's safe-area and sizing updates
+        // never feed back into the window's constraint passes during resizes.
+        let hostingView = NSHostingView(rootView: hudView)
+        hostingView.sizingOptions = []
+        hostingView.autoresizingMask = [.width, .height]
+        let container = NSView()
+        container.addSubview(hostingView)
+        panel.contentView = container
+        hostingView.frame = container.bounds
 
         super.init(window: panel)
 
