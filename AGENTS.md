@@ -27,7 +27,7 @@ The app uses an event tap (`CGEvent.tapCreate`) to monitor global numpad presses
 ### 3. Heads-Up Display (HUD)
 The HUD is implemented as a semi-transparent `NSPanel` with a high window level (`.mainMenu`).
 - **Interaction**: It ignores mouse events (`ignoresMouseEvents = true`) to stay non-intrusive.
-- **Aesthetics**: Uses native glassmorphism (materials) via `VisualEffectView`.
+- **Aesthetics**: Dark panels styled with the `Color.sp*` design tokens.
 - **Idle State**: Collapses into a minimal black "dot" in the bottom-right corner when inactive.
 
 ### 4. Folder Navigation

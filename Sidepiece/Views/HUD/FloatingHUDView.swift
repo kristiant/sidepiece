@@ -37,7 +37,6 @@ struct FloatingHUDView: View {
             Circle().fill(Color.spMuted.opacity(0.9)).frame(width: 4, height: 4)
         } else if !hudManager.isPeaking {
             HStack(spacing: 4) {
-                // Breadcrumb trail in the pill — each ancestor is a back button
                 if !hudManager.folderPath.isEmpty {
                     PillBreadcrumb(path: hudManager.folderPath)
                 }
@@ -189,13 +188,8 @@ private struct BreadcrumbCrumb: View {
             .padding(.horizontal, 4).padding(.vertical, 2)
             .background(isHovered && !isLast ? Color.spPanelElevated : Color.clear)
             .cornerRadius(3)
-            .contentShape(Rectangle())
-            .onHover { hovered in
-                isHovered = hovered
-                hovered ? NSCursor.pointingHand.push() : NSCursor.pop()
-            }
+            .hoverHighlight($isHovered)
             .onTapGesture { if !isLast { action() } }
-            .animation(.easeOut(duration: 0.1), value: isHovered)
     }
 }
 
@@ -225,72 +219,19 @@ struct PeakItemButton: View {
         .padding(3)
         .background(isHovered ? Color.spPanelElevated : Color.spPanelElevated.opacity(0.4))
         .cornerRadius(4)
-        .contentShape(Rectangle())
-        .onHover { hovered in
-            isHovered = hovered
-            hovered ? NSCursor.pointingHand.push() : NSCursor.pop()
-        }
-        .onTapGesture { action() }
-        .animation(.easeOut(duration: 0.1), value: isHovered)
+        .hoverHighlight($isHovered)
+        .onTapGesture(perform: action)
     }
 }
 
-// MARK: - Pointing-hand cursor helper
-
-extension View {
-    @ViewBuilder func cursor(_ cursor: NSCursor) -> some View {
-        self.overlay(CursorView(cursor: cursor))
-    }
-}
-
-private struct CursorView: NSViewRepresentable {
-    let cursor: NSCursor
-    func makeNSView(context: Context) -> NSView { TrackingView(cursor: cursor) }
-    func updateNSView(_ nsView: NSView, context: Context) {}
-
-    private class TrackingView: NSView {
-        let cursor: NSCursor
-        private var area: NSTrackingArea?
-
-        init(cursor: NSCursor) { self.cursor = cursor; super.init(frame: .zero) }
-        required init?(coder: NSCoder) { fatalError() }
-
-        override func hitTest(_ point: NSPoint) -> NSView? { nil }
-
-        override func updateTrackingAreas() {
-            super.updateTrackingAreas()
-            area.map { removeTrackingArea($0) }
-            area = NSTrackingArea(
-                rect: bounds,
-                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-                owner: self,
-                userInfo: nil
-            )
-            addTrackingArea(area!)
-        }
-
-        override func mouseEntered(with event: NSEvent) { cursor.push() }
-        override func mouseExited(with event: NSEvent)  { NSCursor.pop() }
-    }
-}
-
-// MARK: - Vibrancy
-
-struct VisualEffectView: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
+private extension View {
+    func hoverHighlight(_ isHovered: Binding<Bool>) -> some View {
+        contentShape(Rectangle())
+            .onHover { hovered in
+                isHovered.wrappedValue = hovered
+                hovered ? NSCursor.pointingHand.push() : NSCursor.pop()
+            }
+            .animation(.easeOut(duration: 0.1), value: isHovered.wrappedValue)
     }
 }
 
