@@ -11,34 +11,18 @@ struct KeyBindingEditorSheet: View {
     let onDelete: (KeyBinding) -> Void
     
     @State private var selectedActionType: ActionType = .newSnippet
-    
-    // New Snippet State
     @State private var snippetTitle = ""
     @State private var snippetContent = ""
-    
-    // Existing Snippet State
+    @State private var selectedCategoryId: UUID?
     @State private var selectedSnippet: Snippet?
-    
-    // Profile State
     @State private var profileActionType: ProfileActionType = .specific
     @State private var selectedProfileId: UUID?
     @State private var cycleDirection: KeyBinding.CycleDirection = .next
-    
-    // Folder State
     @State private var selectedFolderId: UUID?
-    
-    // Category for new snippet
-    @State private var selectedCategoryId: UUID?
-    
-    // Function State
     @State private var selectedFunction: KeyBinding.AppFunction = .peakSnippets
+    @State private var selectedBundleId = ""
+    @State private var shellCommand = ""
 
-    // Launch App State
-    @State private var selectedBundleId: String = ""
-
-    // Run Command State
-    @State private var shellCommand: String = ""
-    
     @Environment(\.dismiss) private var dismiss
     
     enum ActionType: String, CaseIterable, Identifiable {
@@ -50,17 +34,17 @@ struct KeyBindingEditorSheet: View {
         case launchApp       = "Launch App"
         case runCommand      = "Run Command"
 
-        var id: String { self.rawValue }
+        var id: Self { self }
 
         var icon: String {
             switch self {
-            case .newSnippet:      return "plus.square.fill"
-            case .existingSnippet: return "doc.on.doc.fill"
-            case .folder:          return "folder.fill"
-            case .switchProfile:   return "person.fill"
-            case .appFunction:     return "bolt.fill"
-            case .launchApp:       return "arrow.up.forward.app.fill"
-            case .runCommand:      return "terminal.fill"
+            case .newSnippet:      "plus.square.fill"
+            case .existingSnippet: "doc.on.doc.fill"
+            case .folder:          "folder.fill"
+            case .switchProfile:   "person.fill"
+            case .appFunction:     "bolt.fill"
+            case .launchApp:       "arrow.up.forward.app.fill"
+            case .runCommand:      "terminal.fill"
             }
         }
     }
@@ -68,8 +52,8 @@ struct KeyBindingEditorSheet: View {
     enum ProfileActionType: String, CaseIterable, Identifiable {
         case specific = "Specific Profile"
         case cycle = "Cycle Profiles"
-        
-        var id: String { self.rawValue }
+
+        var id: Self { self }
     }
     
     var body: some View {
@@ -131,43 +115,42 @@ struct KeyBindingEditorSheet: View {
         .frame(width: 460, height: 560)
         .background(Color.spBackground)
         .onAppear {
-            if let binding = binding {
-                switch binding.action {
-                case .snippet(let id):
-                    if let snippet = snippetRepository.getSnippet(id: id) {
-                        selectedActionType = .existingSnippet
-                        selectedSnippet = snippet
-                    } else {
-                        // Snippet not found, maybe deleted?
-                        selectedActionType = .existingSnippet
-                    }
-                case .folder(let id):
-                    selectedActionType = .folder
-                    selectedFolderId = id
-                case .switchProfile(let id):
-                    selectedActionType = .switchProfile
-                    profileActionType = .specific
-                    selectedProfileId = id
-                case .cycleProfile(let direction):
-                    selectedActionType = .switchProfile
-                    profileActionType = .cycle
-                    cycleDirection = direction
-                case .appFunction(let function):
-                    selectedActionType = .appFunction
-                    selectedFunction = function
-                case .launchApp(let bundleId):
-                    selectedActionType = .launchApp
-                    selectedBundleId = bundleId
-                case .runCommand(let command):
-                    selectedActionType = .runCommand
-                    shellCommand = command
-                }
-            } else {
+            guard let action = binding?.action else {
                 selectedProfileId = configurationManager.profiles.first?.id
+                return
             }
+            load(action)
         }
     }
-    
+
+    private func load(_ action: KeyBinding.Action) {
+        switch action {
+        case .snippet(let id):
+            selectedActionType = .existingSnippet
+            selectedSnippet = snippetRepository.getSnippet(id: id)
+        case .folder(let id):
+            selectedActionType = .folder
+            selectedFolderId = id
+        case .switchProfile(let id):
+            selectedActionType = .switchProfile
+            profileActionType = .specific
+            selectedProfileId = id
+        case .cycleProfile(let direction):
+            selectedActionType = .switchProfile
+            profileActionType = .cycle
+            cycleDirection = direction
+        case .appFunction(let function):
+            selectedActionType = .appFunction
+            selectedFunction = function
+        case .launchApp(let bundleId):
+            selectedActionType = .launchApp
+            selectedBundleId = bundleId
+        case .runCommand(let command):
+            selectedActionType = .runCommand
+            shellCommand = command
+        }
+    }
+
     private var sheetHeader: some View {
         HStack {
             Text(isNewBinding ? "Add Binding" : "Edit Binding")
@@ -232,13 +215,7 @@ struct KeyBindingEditorSheet: View {
                 TextEditor(text: $snippetContent)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 150)
-                    .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.spPanelElevated, lineWidth: 1)
-                    )
+                    .codeEditorStyle()
             }
             
             VStack(alignment: .leading, spacing: 6) {
@@ -395,25 +372,17 @@ struct KeyBindingEditorSheet: View {
                         .fontWeight(.medium)
                     Spacer()
                     Button("Test") {
-                        let cmd = shellCommand.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !cmd.isEmpty else { return }
-                        SidepieceEngine.shared.executeAction(.runCommand(command: cmd))
+                        SidepieceEngine.shared.executeAction(.runCommand(command: command))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .disabled(shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(command.isEmpty)
                 }
 
                 TextEditor(text: $shellCommand)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 100)
-                    .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.spPanelElevated, lineWidth: 1)
-                    )
+                    .codeEditorStyle()
             }
 
             Text("Paste any shell command. It runs via /bin/sh so pipes, redirects, and environment variables all work.")
@@ -426,23 +395,17 @@ struct KeyBindingEditorSheet: View {
         HStack {
             if !isNewBinding {
                 Button("Remove Binding", role: .destructive) {
-                    if let binding = binding {
-                        onDelete(binding)
-                    }
+                    binding.map(onDelete)
                 }
                 .foregroundColor(.red)
             }
             
             Spacer()
             
-            Button("Cancel") {
-                dismiss()
-            }
-            .keyboardShortcut(.escape)
-            
-            Button("Save") {
-                saveChanges()
-            }
+            Button("Cancel") { dismiss() }
+                .keyboardShortcut(.escape)
+
+            Button("Save", action: saveChanges)
             .keyboardShortcut(.return)
             .buttonStyle(.borderedProminent)
             .disabled(!canSave)
@@ -451,66 +414,44 @@ struct KeyBindingEditorSheet: View {
     }
     
     private var isNewBinding: Bool {
-        guard let binding = binding else { return true }
-        return snippetRepository.getBinding(for: binding.key) == nil
+        binding.map { snippetRepository.getBinding(for: $0.key) == nil } ?? true
     }
     
-    private var canSave: Bool {
+    private var command: String { shellCommand.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    /// The action picked in the form, or nil if incomplete. New snippets are created on save.
+    private var pickedAction: KeyBinding.Action? {
         switch selectedActionType {
-        case .newSnippet:
-            return !snippetTitle.isEmpty && !snippetContent.isEmpty
-        case .existingSnippet:
-            return selectedSnippet != nil
-        case .folder:
-            return selectedFolderId != nil
+        case .newSnippet: nil
+        case .existingSnippet: selectedSnippet.map { .snippet(id: $0.id) }
+        case .folder: selectedFolderId.map { .folder(id: $0) }
         case .switchProfile:
-            if profileActionType == .specific {
-                return selectedProfileId != nil
-            }
-            return true
-        case .appFunction:
-            return true
-        case .launchApp:
-            return !selectedBundleId.isEmpty
-        case .runCommand:
-            return !shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            profileActionType == .cycle
+                ? .cycleProfile(direction: cycleDirection)
+                : selectedProfileId.map { .switchProfile(id: $0) }
+        case .appFunction: .appFunction(selectedFunction)
+        case .launchApp: selectedBundleId.isEmpty ? nil : .launchApp(bundleId: selectedBundleId)
+        case .runCommand: command.isEmpty ? nil : .runCommand(command: command)
         }
     }
-    
+
+    private var canSave: Bool {
+        selectedActionType == .newSnippet
+            ? !snippetTitle.isEmpty && !snippetContent.isEmpty
+            : pickedAction != nil
+    }
+
     private func saveChanges() {
-        guard var updatedBinding = binding else { return }
-        
-        switch selectedActionType {
-        case .newSnippet:
+        guard var updated = binding else { return }
+        if selectedActionType == .newSnippet {
             let snippet = Snippet(title: snippetTitle, content: snippetContent, categoryId: selectedCategoryId)
             snippetRepository.addSnippet(snippet)
-            updatedBinding.action = .snippet(id: snippet.id)
-        case .existingSnippet:
-            if let snippet = selectedSnippet {
-                updatedBinding.action = .snippet(id: snippet.id)
-            }
-        case .folder:
-            if let folderId = selectedFolderId {
-                updatedBinding.action = .folder(id: folderId)
-            }
-        case .switchProfile:
-            if profileActionType == .specific {
-                if let profileId = selectedProfileId {
-                    updatedBinding.action = .switchProfile(id: profileId)
-                }
-            } else {
-                updatedBinding.action = .cycleProfile(direction: cycleDirection)
-            }
-        case .appFunction:
-            updatedBinding.action = .appFunction(selectedFunction)
-        case .launchApp:
-            updatedBinding.action = .launchApp(bundleId: selectedBundleId)
-        case .runCommand:
-            updatedBinding.action = .runCommand(command: shellCommand.trimmingCharacters(in: .whitespacesAndNewlines))
+            updated.action = .snippet(id: snippet.id)
+        } else if let action = pickedAction {
+            updated.action = action
         }
-        
-        updatedBinding.updatedAt = Date()
-        onSave(updatedBinding)
+        updated.updatedAt = Date()
+        onSave(updated)
     }
 }
 
@@ -552,5 +493,14 @@ struct HierarchicalCategoryRow: View {
                 )
             }
         }
+    }
+}
+
+private extension View {
+    func codeEditorStyle() -> some View {
+        padding(8)
+            .background(Color(nsColor: .textBackgroundColor))
+            .cornerRadius(8)
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.spPanelElevated, lineWidth: 1))
     }
 }
