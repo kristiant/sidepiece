@@ -3,7 +3,6 @@ import Foundation
 import AppKit
 import OSLog
 
-/// The central coordinator for Sidepiece. Bridges hotkeys, snippets, and UI.
 @MainActor
 final class SidepieceEngine: ObservableObject {
     static let shared = SidepieceEngine()
@@ -41,7 +40,6 @@ final class SidepieceEngine: ObservableObject {
         m.onDismissPeak = { [weak self] in self?.hud.dismissPeak() }
     }
 
-    /// Simulate a numpad key press from the GUI (identical path to hardware events).
     func trigger(_ key: NumpadKey) { handleKeyPress(key) }
 
     private func handleKeyPress(_ key: NumpadKey) {
@@ -159,7 +157,6 @@ final class SidepieceEngine: ObservableObject {
         logger.info("Launching \(bundleId) at \(appURL.path)")
     }
 
-    /// Runs an arbitrary shell command via `/bin/sh -c` on a background thread.
     private func runShellCommand(_ command: String) {
         hud.showFeedback(message: "Running command", icon: "terminal.fill")
         logger.info("Running shell command: \(command)")

@@ -1,6 +1,5 @@
 import Foundation
 
-/// Represents a mapping between a numpad key and an action
 struct KeyBinding: Identifiable, Codable, Equatable {
     
     enum Action: Codable, Equatable {

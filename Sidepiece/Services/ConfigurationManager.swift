@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 
-/// Manages persistence of app configuration and profiles
 @MainActor
 final class ConfigurationManager: ObservableObject {
     static let shared = ConfigurationManager()
@@ -40,7 +39,6 @@ final class ConfigurationManager: ObservableObject {
     
     // MARK: - Generic Binding Helper
     
-    /// Generates a SwiftUI Binding that automatically persists changes to disk
     func binding<T>(_ keyPath: WritableKeyPath<AppConfiguration, T>) -> Binding<T> {
         Binding(
             get: { self.configuration[keyPath: keyPath] },
@@ -68,7 +66,6 @@ final class ConfigurationManager: ObservableObject {
     func setActiveProfile(_ profile: Profile) {
         configuration.activeProfileId = profile.id
         
-        // Update isActive flag on all profiles
         for index in profiles.indices {
             profiles[index].isActive = (profiles[index].id == profile.id)
         }
@@ -149,7 +146,6 @@ final class ConfigurationManager: ObservableObject {
         let data = try Data(contentsOf: url)
         let exportData = try JSONDecoder().decode(UnifiedExportData.self, from: data)
         
-        // Update local state
         self.configuration = exportData.configuration
         self.profiles = exportData.profiles
         

@@ -55,7 +55,6 @@ struct FloatingHUDView: View {
         VStack(alignment: .leading, spacing: 0) {
             progressBar.padding(.bottom, 10)
 
-            // Clickable breadcrumb trail
             PeakBreadcrumb(path: hudManager.folderPath)
                 .padding(.bottom, hudManager.folderPath.isEmpty ? 0 : 8)
 

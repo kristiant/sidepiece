@@ -1,15 +1,12 @@
 import Foundation
 import SwiftUI
 
-/// Manages the navigation state within snippets, including folder traversal and auto-exit timers.
 @MainActor
 final class NavigationEngine: ObservableObject {
     static let shared = NavigationEngine()
 
-    /// Full path from root to the current folder.
     @Published private(set) var folderStack: [(id: UUID, name: String)] = []
 
-    /// Convenience: the ID of the deepest active folder, or nil at root.
     var currentFolderId: UUID? { folderStack.last?.id }
 
     private var folderModeTimer: Timer?
@@ -22,7 +19,6 @@ final class NavigationEngine: ObservableObject {
         resetTimer()
     }
 
-    /// Pop one level up. Invalidates timer if we've returned to root.
     func popFolder() {
         guard !folderStack.isEmpty else { return }
         folderStack.removeLast()
@@ -40,7 +36,6 @@ final class NavigationEngine: ObservableObject {
         }
     }
 
-    /// Exit all folders (used by auto-exit timer and post-snippet autoExit).
     func exitFolder() {
         invalidateTimer()
         folderStack.removeAll()

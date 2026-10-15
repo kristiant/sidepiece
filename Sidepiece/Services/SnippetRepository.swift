@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-/// Repository for managing snippets and key bindings
 @MainActor
 final class SnippetRepository: ObservableObject {
     static let shared = SnippetRepository()
@@ -114,7 +113,6 @@ final class SnippetRepository: ObservableObject {
     }
     
     func moveCategory(_ categoryId: UUID, toParentId: UUID?) {
-        // Prevent moving a category into itself or its own descendants
         if let toId = toParentId, isDescendant(of: categoryId, target: toId) { return }
         guard let index = categories.firstIndex(where: { $0.id == categoryId }) else { return }
         categories[index].parentId = toParentId
