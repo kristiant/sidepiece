@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// Main settings window view
 struct SettingsView: View {
-    
     private enum Tab: String, CaseIterable {
         case profiles = "Profiles"
         case general = "General"
@@ -43,28 +41,16 @@ struct SettingsView: View {
     
     private var settingsHeader: some View {
         VStack(spacing: 12) {
-            HStack {
-                Button(action: { dismiss() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
+            Text("Settings")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .leading) {
+                    Button { dismiss() } label: {
+                        Label("Back", systemImage: "chevron.left").foregroundColor(Color.spAccent)
                     }
-                    .foregroundColor(Color.spAccent)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                
-                Spacer()
-                
-                Text("Settings")
-                    .font(.headline)
-                
-                Spacer()
-                
-                // Ghost button for centering
-                Text("Back")
-                    .opacity(0)
-            }
-            
+
             Picker("", selection: $selectedTab) {
                 ForEach(Tab.allCases, id: \.self) { tab in
                     Text(tab.rawValue).tag(tab)
@@ -76,8 +62,6 @@ struct SettingsView: View {
         .padding()
     }
 }
-
-
 
 struct SnippetsSettingsView: View {
     @ObservedObject var snippetRepository: SnippetRepository
@@ -126,8 +110,7 @@ struct SnippetsSettingsView: View {
         let name = newCategoryName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
         
-        let newCategory = SnippetCategory(name: name, parentId: selectedParentId)
-        snippetRepository.addCategory(newCategory)
+        snippetRepository.addCategory(SnippetCategory(name: name, parentId: selectedParentId))
         newCategoryName = ""
         selectedParentId = nil
     }
@@ -174,11 +157,7 @@ struct ProfilesSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Profiles List Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Your Profiles")
-                        .font(.headline)
-                    
+                SettingsPanel("Your Profiles") {
                     VStack(spacing: 1) {
                         ForEach(configurationManager.profiles) { profile in
                             profileRow(for: profile)
@@ -192,15 +171,8 @@ struct ProfilesSettingsView: View {
                     .background(Color.spPanelElevated)
                     .cornerRadius(8)
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
-                
-                // Create New Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Create New Profile")
-                        .font(.headline)
-                    
+
+                SettingsPanel("Create New Profile") {
                     HStack {
                         TextField("Profile Name", text: $newProfileName)
                             .textFieldStyle(.roundedBorder)
@@ -214,9 +186,6 @@ struct ProfilesSettingsView: View {
                         .disabled(newProfileName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
-                .padding()
-                .background(Color.spPanel)
-                .cornerRadius(12)
             }
             .padding()
         }
@@ -227,7 +196,8 @@ struct ProfilesSettingsView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 if editingProfile?.id == profile.id {
-                    TextField("Name", text: $editingName, onCommit: saveProfileName)
+                    TextField("Name", text: $editingName)
+                        .onSubmit(saveProfileName)
                         .textFieldStyle(.roundedBorder)
                 } else {
                     Text(profile.name)
@@ -287,9 +257,7 @@ struct ProfilesSettingsView: View {
     private func addProfile() {
         let name = newProfileName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
-        
-        let newProfile = Profile(name: name)
-        configurationManager.addProfile(newProfile)
+        configurationManager.addProfile(Profile(name: name))
         newProfileName = ""
     }
     
