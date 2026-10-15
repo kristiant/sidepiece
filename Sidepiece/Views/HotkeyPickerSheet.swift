@@ -54,11 +54,9 @@ struct HotkeyPickerSheet: View {
         ScrollView {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(NumpadKey.keys(in: selectedCategory)) { key in
-                    KeyShortcutCell(
-                        key: key,
-                        existingBinding: snippetRepository.getBinding(for: key)
-                    ) {
-                        assign(to: key)
+                    KeyShortcutCell(key: key, label: snippetRepository.getBinding(for: key).map { snippetRepository.label(for: $0.action) }) {
+                        snippetRepository.updateBinding(KeyBinding(key: key, action: .snippet(id: snippet.id)))
+                        dismiss()
                     }
                 }
             }
@@ -73,17 +71,11 @@ struct HotkeyPickerSheet: View {
         }
         .padding()
     }
-    
-    private func assign(to key: NumpadKey) {
-        let binding = KeyBinding(key: key, action: .snippet(id: snippet.id))
-        snippetRepository.updateBinding(binding)
-        dismiss()
-    }
 }
 
 struct KeyShortcutCell: View {
     let key: NumpadKey
-    let existingBinding: KeyBinding?
+    let label: String?
     let onTap: () -> Void
     
     var body: some View {
@@ -91,8 +83,8 @@ struct KeyShortcutCell: View {
             VStack(spacing: 4) {
                 Text(key.symbol)
                     .font(.headline)
-                if let binding = existingBinding {
-                    Text(bindingTitle(binding))
+                if let label {
+                    Text(label)
                         .font(.system(size: 8))
                         .foregroundColor(Color.spMuted)
                         .lineLimit(1)
@@ -108,20 +100,9 @@ struct KeyShortcutCell: View {
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(existingBinding != nil ? Color.spAccent.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(label != nil ? Color.spAccent.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
-    }
-    
-    private func bindingTitle(_ binding: KeyBinding) -> String {
-        switch binding.action {
-        case .snippet(let id):
-            return SnippetRepository.shared.getSnippet(id: id)?.title ?? "Snippet"
-        case .folder(let id):
-            return SnippetRepository.shared.getCategory(id: id)?.name ?? "Folder"
-        default:
-            return binding.action.displayName
-        }
     }
 }

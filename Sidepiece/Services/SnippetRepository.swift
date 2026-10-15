@@ -52,6 +52,14 @@ final class SnippetRepository: ObservableObject {
         updateSnippet(updated)
     }
     
+    func label(for action: KeyBinding.Action) -> String {
+        switch action {
+        case .snippet(let id): getSnippet(id: id)?.title ?? "Snippet"
+        case .folder(let id): getCategory(id: id)?.name ?? "Folder"
+        default: action.displayName
+        }
+    }
+
     // MARK: - Snippet CRUD
     
     func addSnippet(_ snippet: Snippet) { snippets.append(snippet); saveSnippets() }

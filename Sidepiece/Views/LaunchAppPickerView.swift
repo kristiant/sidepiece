@@ -1,19 +1,11 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Installed app model
-
 struct InstalledApp: Identifiable, Hashable {
-    let id: String          // bundle identifier — used as the stored value
+    let id: String
     let name: String
-    let url: URL
-    var icon: NSImage?
-
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: InstalledApp, rhs: InstalledApp) -> Bool { lhs.id == rhs.id }
+    let icon: NSImage
 }
-
-// MARK: - Picker view
 
 struct LaunchAppPickerView: View {
     @Binding var selectedBundleId: String
@@ -49,11 +41,9 @@ struct LaunchAppPickerView: View {
                     set: { selectedBundleId = $0?.id ?? "" }
                 )) { app in
                     HStack(spacing: 8) {
-                        if let icon = app.icon {
-                            Image(nsImage: icon)
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                        }
+                        Image(nsImage: app.icon)
+                            .resizable()
+                            .frame(width: 20, height: 20)
                         Text(app.name)
                             .fontWeight(app.id == selectedBundleId ? .semibold : .regular)
                         Spacer()
@@ -84,57 +74,31 @@ struct LaunchAppPickerView: View {
         .task { await loadApps() }
     }
 
-    // MARK: - App scanning
-
     @MainActor
     private func loadApps() async {
-        isLoading = true
-        let found = await Task.detached(priority: .userInitiated) {
-            Self.scanInstalledApps()
-        }.value
-        apps = found
+        apps = await Task.detached(priority: .userInitiated) { Self.scanInstalledApps() }.value
         isLoading = false
     }
 
     private static func scanInstalledApps() -> [InstalledApp] {
         let fm = FileManager.default
-        let searchDirs: [URL] = [
-            URL(fileURLWithPath: "/Applications"),
-            URL(fileURLWithPath: "/Applications/Utilities"),
-            URL(fileURLWithPath: "/System/Applications"),
-            URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Applications")
-        ].filter { fm.fileExists(atPath: $0.path) }
+        let dirs = ["/Applications", "/Applications/Utilities", "/System/Applications", NSHomeDirectory() + "/Applications"]
+        let bundles = dirs
+            .flatMap { (try? fm.contentsOfDirectory(at: URL(filePath: $0), includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? [] }
+            .filter { $0.pathExtension == "app" }
+            .compactMap(Bundle.init(url:))
 
         var seen = Set<String>()
-        var result: [InstalledApp] = []
-
-        for dir in searchDirs {
-            guard let entries = try? fm.contentsOfDirectory(
-                at: dir,
-                includingPropertiesForKeys: [.isDirectoryKey],
-                options: [.skipsHiddenFiles]
-            ) else { continue }
-
-            for entry in entries where entry.pathExtension == "app" {
-                guard
-                    let bundle = Bundle(url: entry),
-                    let bundleId = bundle.bundleIdentifier,
-                    !seen.contains(bundleId)
-                else { continue }
-
-                seen.insert(bundleId)
-                let name = bundle.infoDictionary?["CFBundleDisplayName"] as? String
-                    ?? bundle.infoDictionary?["CFBundleName"] as? String
-                    ?? entry.deletingPathExtension().lastPathComponent
-
-                // Load icon on background thread — NSWorkspace is thread-safe for this
-                let icon = NSWorkspace.shared.icon(forFile: entry.path)
+        return bundles
+            .compactMap { bundle -> InstalledApp? in
+                guard let id = bundle.bundleIdentifier, seen.insert(id).inserted else { return nil }
+                let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+                    ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
+                    ?? bundle.bundleURL.deletingPathExtension().lastPathComponent
+                let icon = NSWorkspace.shared.icon(forFile: bundle.bundlePath)
                 icon.size = NSSize(width: 20, height: 20)
-
-                result.append(InstalledApp(id: bundleId, name: name, url: entry, icon: icon))
+                return InstalledApp(id: id, name: name, icon: icon)
             }
-        }
-
-        return result.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 }

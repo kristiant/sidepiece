@@ -190,17 +190,10 @@ final class SidepieceEngine: ObservableObject {
             }
         } else {
             items = keys.compactMap { key in
-                snippetRepo.getBinding(for: key).map { PeakItem(key: key, label: peakLabel(for: $0.action).uppercased()) }
+                snippetRepo.getBinding(for: key).map { PeakItem(key: key, label: snippetRepo.label(for: $0.action).uppercased()) }
             }
         }
         hud.peak(assignments: items)
-    }
 
-    private func peakLabel(for action: KeyBinding.Action) -> String {
-        switch action {
-        case .folder(let id): snippetRepo.getCategory(id: id)?.name ?? "FOLDER"
-        case .snippet(let id): snippetRepo.getSnippet(id: id)?.title ?? "SNIPPET"
-        default: action.displayName
-        }
     }
 }
