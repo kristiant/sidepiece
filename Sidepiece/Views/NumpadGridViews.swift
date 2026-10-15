@@ -1,7 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-
 struct CategoryTab: View {
     let category: NumpadKey.Category
     let isSelected: Bool
@@ -11,7 +10,7 @@ struct CategoryTab: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 4) {
-                Image(systemName: categoryIcon)
+                Image(systemName: category.icon)
                     .font(.caption)
                 Text(category.rawValue)
                     .font(.caption)
@@ -34,16 +33,17 @@ struct CategoryTab: View {
         }
         .buttonStyle(.plain)
     }
-    
-    private var categoryIcon: String {
-        switch category {
-        case .numbers: return "number"
-        case .operators: return "plus.forwardslash.minus"
-        case .functionKeys: return "function"
+}
+
+private extension NumpadKey.Category {
+    var icon: String {
+        switch self {
+        case .numbers: "number"
+        case .operators: "plus.forwardslash.minus"
+        case .functionKeys: "function"
         }
     }
 }
-
 
 struct KeyCell: View {
     let key: NumpadKey
@@ -112,7 +112,7 @@ struct KeyCell: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.green)
                     .transition(.scale.combined(with: .opacity))
-            } else if let binding = binding {
+            } else if let binding {
                 VStack(spacing: 1) {
                     Text(actionName(for: binding.action))
                         .font(.system(size: 10, weight: .semibold))
@@ -136,69 +136,60 @@ struct KeyCell: View {
     
     private func onDrop(_ providers: [NSItemProvider]) -> Bool {
         for provider in providers {
-            provider.loadObject(ofClass: NSString.self) { str, _ in
-                guard let droppedStr = str as? String else { return }
-                
+            _ = provider.loadObject(ofClass: NSString.self) { str, _ in
+                guard let str = str as? String else { return }
                 DispatchQueue.main.async {
-                    if droppedStr.hasPrefix("fnc:"),
-                       let fncType = KeyBinding.AppFunction(rawValue: String(droppedStr.dropFirst(4))) {
-                        snippetRepository.updateBinding(KeyBinding(key: key, action: .appFunction(fncType)))
-                    } else if let id = UUID(uuidString: droppedStr) {
-                        if let _ = snippetRepository.getSnippet(id: id) {
-                            snippetRepository.updateBinding(KeyBinding(key: key, action: .snippet(id: id)))
-                        } else if let cat = snippetRepository.getCategory(id: id) {
-                            snippetRepository.updateBinding(KeyBinding(key: key, action: .folder(id: cat.id)))
-                        }
+                    if let action = droppedAction(str) {
+                        snippetRepository.updateBinding(KeyBinding(key: key, action: action))
                     }
                 }
             }
         }
         return true
     }
-    
-    
+
+    /// Drag payloads are `fnc:<AppFunction>` or a snippet or folder UUID.
+    private func droppedAction(_ str: String) -> KeyBinding.Action? {
+        if str.hasPrefix("fnc:") {
+            return KeyBinding.AppFunction(rawValue: String(str.dropFirst(4))).map { .appFunction($0) }
+        }
+        guard let id = UUID(uuidString: str) else { return nil }
+        if snippetRepository.getSnippet(id: id) != nil { return .snippet(id: id) }
+        if snippetRepository.getCategory(id: id) != nil { return .folder(id: id) }
+        return nil
+    }
+
     private func actionName(for action: KeyBinding.Action) -> String {
         switch action {
         case .snippet(let id):
-            return snippetRepository.getSnippet(id: id)?.title ?? "Untitled"
+            snippetRepository.getSnippet(id: id)?.title ?? "Untitled"
         case .folder(let id):
-            return snippetRepository.categories.first(where: { $0.id == id })?.name ?? "Unknown Folder"
+            snippetRepository.getCategory(id: id)?.name ?? "Unknown Folder"
         case .switchProfile(let id):
-            return configurationManager.profiles.first(where: { $0.id == id })?.name ?? "Unknown Profile"
+            configurationManager.profiles.first { $0.id == id }?.name ?? "Unknown Profile"
         case .cycleProfile(let direction):
-            return "Cycle \(direction.rawValue.capitalized)"
+            "Cycle \(direction.rawValue.capitalized)"
         case .appFunction(let function):
-            return function.displayName
+            function.displayName
         case .launchApp(let bundleId):
-            let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)
-            return Bundle(url: url ?? URL(fileURLWithPath: ""))?.infoDictionary?["CFBundleName"] as? String
-                ?? bundleId
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)
+                .map { FileManager.default.displayName(atPath: $0.path) } ?? bundleId
         case .runCommand(let cmd):
-            return cmd.components(separatedBy: " ").prefix(3).joined(separator: " ")
+            cmd.split(separator: " ").prefix(3).joined(separator: " ")
         }
     }
-    
-    private var hasBinding: Bool {
-        binding != nil
-    }
-    
+
+    private var hasBinding: Bool { binding != nil }
+
     private var cellBackground: Color {
-        if isTargeted {
-            return Color.spDropTarget
-        }
-        if isHovered {
-            return Color.spAccent.opacity(0.12)
-        }
-        return hasBinding ? Color.spAccent.opacity(0.07) : Color.spPanel
+        if isTargeted { return .spDropTarget }
+        if isHovered { return .spAccent.opacity(0.12) }
+        return hasBinding ? .spAccent.opacity(0.07) : .spPanel
     }
-    
+
     private var borderColor: Color {
-        if isTargeted {
-            return Color.green
-        }
-        if isSelected {
-            return Color.spAccent
-        }
-        return hasBinding ? Color.spAccent.opacity(0.4) : Color.spPanelElevated
+        if isTargeted { return .green }
+        if isSelected { return .spAccent }
+        return hasBinding ? .spAccent.opacity(0.4) : .spPanelElevated
     }
 }

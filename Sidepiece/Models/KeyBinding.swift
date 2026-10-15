@@ -14,13 +14,13 @@ struct KeyBinding: Identifiable, Codable, Equatable {
 
         var displayName: String {
             switch self {
-            case .snippet:               return "Snippet"
-            case .folder:                return "Folder"
-            case .switchProfile:         return "Switch Profile"
-            case .cycleProfile(let d):   return "Cycle Profiles (\(d.rawValue.capitalized))"
-            case .appFunction(let f):    return f.displayName
-            case .launchApp(let id):     return "Launch: \(id)"
-            case .runCommand(let cmd):   return cmd.components(separatedBy: " ").prefix(3).joined(separator: " ")
+            case .snippet:               "Snippet"
+            case .folder:                "Folder"
+            case .switchProfile:         "Switch Profile"
+            case .cycleProfile(let d):   "Cycle Profiles (\(d.rawValue.capitalized))"
+            case .appFunction(let f):    f.displayName
+            case .launchApp(let id):     "Launch: \(id)"
+            case .runCommand(let cmd):   cmd.split(separator: " ").prefix(3).joined(separator: " ")
             }
         }
     }
@@ -38,24 +38,22 @@ struct KeyBinding: Identifiable, Codable, Equatable {
 
         var displayName: String {
             switch self {
-            case .peakSnippets:   return "Peak Snippets"
-            case .cycleWindows:   return "Cycle Windows"
-            case .appExpose:      return "App Exposé"
-            case .missionControl: return "Mission Control"
+            case .peakSnippets:   "Peak Snippets"
+            case .cycleWindows:   "Cycle Windows"
+            case .appExpose:      "App Exposé"
+            case .missionControl: "Mission Control"
             }
         }
 
         var icon: String {
             switch self {
-            case .peakSnippets:   return "eye.fill"
-            case .cycleWindows:   return "rectangle.2.swap"
-            case .appExpose:      return "rectangle.3.group.fill"
-            case .missionControl: return "square.3.layers.3d.top.filled"
+            case .peakSnippets:   "eye.fill"
+            case .cycleWindows:   "rectangle.2.swap"
+            case .appExpose:      "rectangle.3.group.fill"
+            case .missionControl: "square.3.layers.3d.top.filled"
             }
         }
     }
-    
-    // MARK: - Properties
     
     let id: UUID
     var key: NumpadKey
@@ -63,8 +61,6 @@ struct KeyBinding: Identifiable, Codable, Equatable {
     var isEnabled: Bool
     var createdAt: Date
     var updatedAt: Date
-    
-    // MARK: - Initialisation
     
     init(
         id: UUID = UUID(),
@@ -82,8 +78,6 @@ struct KeyBinding: Identifiable, Codable, Equatable {
         self.updatedAt = updatedAt
     }
     
-    // MARK: - Backward Compatibility
-    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decode(UUID.self, forKey: .id)
@@ -92,13 +86,11 @@ struct KeyBinding: Identifiable, Codable, Equatable {
         self.createdAt = try container.decode(Date.self, forKey: .createdAt)
         self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
         
-        // Handle migration from snippet to action
         if let action = try? container.decode(Action.self, forKey: .action) {
             self.action = action
         } else if let snippet = try? container.decode(Snippet.self, forKey: .snippet) {
             self.action = .snippet(id: snippet.id)
         } else {
-            // Default to empty if somehow both missing (should not happen normally)
             throw DecodingError.dataCorruptedError(forKey: .action, in: container, debugDescription: "Missing action or snippet data")
         }
     }
