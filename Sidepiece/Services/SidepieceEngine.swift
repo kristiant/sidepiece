@@ -13,12 +13,9 @@ final class SidepieceEngine: ObservableObject {
     private let navigation = NavigationEngine.shared
     private let hotkeyManager = HotkeyManager.shared
     private let hud = HUDManager.shared
-    private let clipboard = ClipboardService()
 
     private init() {
         setupHotkeys()
-        // Keep HUD in sync when the auto-exit timer fires inside NavigationEngine.
-        // Dismiss the peak too — its content is now stale (folder context is gone).
         NotificationCenter.default.addObserver(
             forName: .didAutoExitFolder, object: nil, queue: .main
         ) { [weak self] _ in
@@ -30,20 +27,17 @@ final class SidepieceEngine: ObservableObject {
     }
 
     private func setupHotkeys() {
-        hotkeyManager.onKeyPressed = { [weak self] key in self?.handleKeyPress(key) }
-        hotkeyManager.shouldConsumeKey = { [weak self] key in
+        let m = hotkeyManager.monitor
+        m.onKeyPressed = { [weak self] in self?.handleKeyPress($0) }
+        m.onNumberRowKey = { [weak self] in self?.handleKeyPress($0) }
+        m.shouldConsumeKey = { [weak self] key in
             guard let self else { return false }
-            return self.navigation.currentFolderId != nil ||
-                   self.snippetRepo.getBinding(for: key) != nil
+            return navigation.currentFolderId != nil || snippetRepo.getBinding(for: key) != nil
         }
-        // Peak trigger — closure so config changes are reflected immediately.
-        hotkeyManager.peakTriggerKeyCode = { [weak self] in
-            self?.configManager.configuration.peakHotkey?.keyCode
-        }
-        hotkeyManager.isPeaking    = { [weak self] in self?.hud.isPeaking ?? false }
-        hotkeyManager.onPeakTrigger  = { [weak self] in self?.peakSnippets() }
-        hotkeyManager.onNumberRowKey = { [weak self] key in self?.handleKeyPress(key) }
-        hotkeyManager.onDismissPeak  = { [weak self] in self?.hud.dismissPeak() }
+        m.peakTriggerKeyCode = { [weak self] in self?.configManager.configuration.peakHotkey?.keyCode }
+        m.isPeaking = { [weak self] in self?.hud.isPeaking ?? false }
+        m.onPeakTrigger = { [weak self] in self?.peakSnippets() }
+        m.onDismissPeak = { [weak self] in self?.hud.dismissPeak() }
     }
 
     /// Simulate a numpad key press from the GUI (identical path to hardware events).
@@ -129,16 +123,16 @@ final class SidepieceEngine: ObservableObject {
     }
 
     private func executeSnippet(_ snippet: Snippet) {
-        clipboard.copy(snippet.content)
+        Clipboard.copy(snippet.content)
         snippetRepo.recordUsage(for: snippet)
         if configManager.configuration.playSoundOnCopy { NSSound(named: "Submarine")?.play() }
         if configManager.configuration.autoPaste {
             Task {
                 try? await Task.sleep(nanoseconds: 100_000_000)
-                clipboard.paste()
+                Clipboard.paste()
                 if configManager.configuration.autoEnterAfterPaste {
                     try? await Task.sleep(nanoseconds: 50_000_000)
-                    clipboard.typeEnter()
+                    Clipboard.typeEnter()
                 }
             }
         }
