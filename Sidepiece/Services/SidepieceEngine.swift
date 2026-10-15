@@ -134,6 +134,9 @@ final class SidepieceEngine: ObservableObject {
             }
         }
         hud.showFeedback(message: "Copied: \(snippet.title)", icon: "doc.on.doc.fill")
+        if configManager.configuration.showNotificationOnCopy {
+            Task { await Notifier.shared.post("Copied", body: snippet.title) }
+        }
     }
 
     private func handleAppFunction(_ function: KeyBinding.AppFunction) {
