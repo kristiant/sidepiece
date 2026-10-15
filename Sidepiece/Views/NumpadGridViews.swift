@@ -1,50 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct CategoryTab: View {
-    let category: NumpadKey.Category
-    let isSelected: Bool
-    let bindingCount: Int
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 4) {
-                Image(systemName: category.icon)
-                    .font(.caption)
-                Text(category.rawValue)
-                    .font(.caption)
-                if bindingCount > 0 {
-                    Text("\(bindingCount)")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(isSelected ? Color.spAccent : Color.spMuted)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(isSelected ? Color.white.opacity(0.25) : Color.spBackground)
-                        .cornerRadius(4)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(isSelected ? Color.spAccent : Color.spPanelElevated)
-            .foregroundColor(isSelected ? .white : Color.spText)
-            .cornerRadius(8)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private extension NumpadKey.Category {
-    var icon: String {
-        switch self {
-        case .numbers: "number"
-        case .operators: "plus.forwardslash.minus"
-        case .functionKeys: "function"
-        }
-    }
-}
-
 struct KeyCell: View {
     let key: NumpadKey
     let binding: KeyBinding?

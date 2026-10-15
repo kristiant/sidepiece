@@ -9,7 +9,7 @@ struct MenuBarPopoverView: View {
 
     @State private var showingSettings = false
     @State private var editingBinding: KeyBinding?
-    @State private var isEditingBinding = false
+    @State private var showingClearAlert = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -42,20 +42,26 @@ struct MenuBarPopoverView: View {
             )
             .background(Color.spBackground)
         }
-        .sheet(isPresented: $isEditingBinding) {
+        .sheet(item: $editingBinding) { binding in
             KeyBindingEditorSheet(
-                binding: $editingBinding,
+                binding: binding,
                 snippetRepository: snippetRepository,
                 configurationManager: configurationManager,
-                onSave: { binding in
-                    snippetRepository.updateBinding(binding)
-                    isEditingBinding = false
+                onSave: {
+                    snippetRepository.updateBinding($0)
+                    editingBinding = nil
                 },
-                onDelete: { binding in
-                    snippetRepository.removeBinding(for: binding.key)
-                    isEditingBinding = false
+                onDelete: {
+                    snippetRepository.removeBinding(for: $0.key)
+                    editingBinding = nil
                 }
             )
+        }
+        .alert("Clear all hotkeys?", isPresented: $showingClearAlert) {
+            Button("Clear", role: .destructive) { configurationManager.clearAllBindings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Reset all assignments for the current profile.")
         }
     }
     
@@ -70,17 +76,7 @@ struct MenuBarPopoverView: View {
             
             Spacer()
             
-            Button("Clear All") {
-                let alert = NSAlert()
-                alert.messageText = "Clear all hotkeys?"
-                alert.informativeText = "Reset all assignments for the current profile."
-                alert.addButton(withTitle: "Clear")
-                alert.addButton(withTitle: "Cancel")
-                alert.alertStyle = .warning
-                if alert.runModal() == .alertFirstButtonReturn {
-                    configurationManager.clearAllBindings()
-                }
-            }
+            Button("Clear All") { showingClearAlert = true }
             .font(.system(size: 10, weight: .bold))
             .buttonStyle(.plain)
             .foregroundColor(.red.opacity(0.85))
@@ -119,11 +115,7 @@ struct MenuBarPopoverView: View {
                         configurationManager: configurationManager,
                         snippetRepository: snippetRepository
                     ) {
-                        if let binding = snippetRepository.getBinding(for: key) {
-                            onSelect(binding)
-                        } else {
-                            openEditor(for: key)
-                        }
+                        snippetRepository.getBinding(for: key).map(onSelect) ?? openEditor(for: key)
                     } onEdit: {
                         openEditor(for: key)
                     }
@@ -142,30 +134,23 @@ struct MenuBarPopoverView: View {
     private func onSelect(_ binding: KeyBinding) {
         switch binding.action {
         case .snippet(let id):
-            if let snippet = snippetRepository.getSnippet(id: id) {
-                onSnippetSelected(snippet)
-            }
+            snippetRepository.getSnippet(id: id).map(onSnippetSelected)
         case .folder:
             break
         case .switchProfile(let id):
-            if let profile = configurationManager.profiles.first(where: { $0.id == id }) {
-                configurationManager.setActiveProfile(profile)
-            }
+            configurationManager.profiles.first { $0.id == id }.map(configurationManager.setActiveProfile)
         case .cycleProfile(let direction):
             configurationManager.cycleProfiles(direction: direction)
         case .appFunction(let function):
             onAppFunctionSelected(function)
-        case .launchApp(let bundleId):
-            SidepieceEngine.shared.executeAction(.launchApp(bundleId: bundleId))
-        case .runCommand(let command):
-            SidepieceEngine.shared.executeAction(.runCommand(command: command))
+        case .launchApp, .runCommand:
+            SidepieceEngine.shared.executeAction(binding.action)
         }
     }
 
     private func openEditor(for key: NumpadKey) {
         editingBinding = snippetRepository.getBinding(for: key)
             ?? KeyBinding(key: key, action: .appFunction(.peakSnippets))
-        isEditingBinding = true
     }
     
     private var footer: some View {
@@ -178,7 +163,7 @@ struct MenuBarPopoverView: View {
             
             Spacer()
             
-            Button(action: quitApp) {
+            Button { NSApp.terminate(nil) } label: {
                 Label("Quit", systemImage: "power")
             }
             .buttonStyle(.plain)
@@ -187,10 +172,4 @@ struct MenuBarPopoverView: View {
         .font(.caption)
         .padding()
     }
-    
-    private func quitApp() {
-        NSApp.terminate(nil)
-    }
 }
-
-

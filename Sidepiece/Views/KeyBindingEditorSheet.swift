@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// Main sheet for editing key bindings
 struct KeyBindingEditorSheet: View {
-    
-    @Binding var binding: KeyBinding?
+    let binding: KeyBinding
     @ObservedObject var snippetRepository: SnippetRepository
     @ObservedObject var configurationManager: ConfigurationManager
     
@@ -115,11 +113,7 @@ struct KeyBindingEditorSheet: View {
         .frame(width: 460, height: 560)
         .background(Color.spBackground)
         .onAppear {
-            guard let action = binding?.action else {
-                selectedProfileId = configurationManager.profiles.first?.id
-                return
-            }
-            load(action)
+            load(binding.action)
         }
     }
 
@@ -167,22 +161,20 @@ struct KeyBindingEditorSheet: View {
     
     private var keyInfoSection: some View {
         HStack(spacing: 12) {
-            if let key = binding?.key {
-                Text(key.symbol)
-                    .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 50, height: 44)
-                    .background(Color.spAccent)
-                    .cornerRadius(10)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Key: \(key.displayName)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text("Category: \(key.category.rawValue)")
-                        .font(.caption)
-                        .foregroundColor(Color.spMuted)
-                }
+            Text(binding.key.symbol)
+                .font(.system(.title, design: .rounded, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 50, height: 44)
+                .background(Color.spAccent)
+                .cornerRadius(10)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Key: \(binding.key.displayName)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text("Category: \(binding.key.category.rawValue)")
+                    .font(.caption)
+                    .foregroundColor(Color.spMuted)
             }
             Spacer()
         }
@@ -395,7 +387,7 @@ struct KeyBindingEditorSheet: View {
         HStack {
             if !isNewBinding {
                 Button("Remove Binding", role: .destructive) {
-                    binding.map(onDelete)
+                    onDelete(binding)
                 }
                 .foregroundColor(.red)
             }
@@ -414,7 +406,7 @@ struct KeyBindingEditorSheet: View {
     }
     
     private var isNewBinding: Bool {
-        binding.map { snippetRepository.getBinding(for: $0.key) == nil } ?? true
+        snippetRepository.getBinding(for: binding.key) == nil
     }
     
     private var command: String { shellCommand.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -442,7 +434,7 @@ struct KeyBindingEditorSheet: View {
     }
 
     private func saveChanges() {
-        guard var updated = binding else { return }
+        var updated = binding
         if selectedActionType == .newSnippet {
             let snippet = Snippet(title: snippetTitle, content: snippetContent, categoryId: selectedCategoryId)
             snippetRepository.addSnippet(snippet)
