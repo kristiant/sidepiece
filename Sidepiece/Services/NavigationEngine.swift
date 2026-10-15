@@ -45,6 +45,7 @@ final class NavigationEngine: ObservableObject {
 
     func resetTimer() {
         invalidateTimer()
+        guard ConfigurationManager.shared.configuration.autoExitFolderMode else { return }
         folderModeTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.exitFolder()

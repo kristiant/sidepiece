@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import ServiceManagement
 
 @MainActor
 final class ConfigurationManager: ObservableObject {
@@ -7,7 +8,11 @@ final class ConfigurationManager: ObservableObject {
     
     // MARK: - Published Properties
     
-    @Published private(set) var configuration: AppConfiguration
+    @Published private(set) var configuration: AppConfiguration {
+        didSet {
+            if configuration.launchAtLogin != oldValue.launchAtLogin { syncLoginItem() }
+        }
+    }
     @Published private(set) var profiles: [Profile]
     
     private let configURL = Persistence.dir.appending(path: "config.json")
@@ -52,6 +57,14 @@ final class ConfigurationManager: ObservableObject {
     }
 
     // MARK: - Configuration
+
+    private func syncLoginItem() {
+        do {
+            configuration.launchAtLogin ? try SMAppService.mainApp.register() : try SMAppService.mainApp.unregister()
+        } catch {
+            print("Sidepiece: login item update failed: \(error)")
+        }
+    }
     
     private func saveConfiguration() {
         Persistence.save(configuration, to: configURL)
