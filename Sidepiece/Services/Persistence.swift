@@ -1,7 +1,10 @@
 import Foundation
+import OSLog
 
 /// Atomic JSON persistence. Unreadable files are moved aside as `.corrupt` and the fallback is used.
 enum Persistence {
+    private static let logger = Logger(category: "Persistence")
+
     static let dir: URL = {
         let url = URL.applicationSupportDirectory.appending(path: "Sidepiece", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -13,7 +16,7 @@ enum Persistence {
         do {
             return try JSONDecoder().decode(T.self, from: data)
         } catch {
-            print("Sidepiece: archiving corrupt \(url.lastPathComponent): \(error)")
+            logger.error("Archiving corrupt \(url.lastPathComponent): \(error)")
             let backup = url.appendingPathExtension("corrupt")
             try? FileManager.default.removeItem(at: backup)
             try? FileManager.default.moveItem(at: url, to: backup)
@@ -27,7 +30,7 @@ enum Persistence {
         do {
             try encoder.encode(value).write(to: url, options: .atomic)
         } catch {
-            print("Sidepiece: failed to save \(url.lastPathComponent): \(error)")
+            logger.error("Failed to save \(url.lastPathComponent): \(error)")
         }
     }
 }

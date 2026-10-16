@@ -5,7 +5,7 @@ import OSLog
 @MainActor
 final class HotkeyManager: ObservableObject {
     static let shared = HotkeyManager()
-    private let logger = Logger(subsystem: "com.sidepiece.app", category: "Hotkey")
+    private let logger = Logger(category: "Hotkey")
 
     let monitor = GlobalHotkeyMonitor()
     @Published private(set) var isAuthorized = false

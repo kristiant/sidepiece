@@ -5,7 +5,7 @@ import OSLog
 /// Event tap for numpad keys and the peak hotkey. While peaking it also handles Escape and the number row.
 /// Closures are queried on every event, so config changes apply without restarting the tap.
 final class GlobalHotkeyMonitor {
-    private let logger = Logger(subsystem: "com.sidepiece.app", category: "Monitor")
+    private let logger = Logger(category: "Monitor")
 
     var onKeyPressed: ((NumpadKey) -> Void)?
     var shouldConsumeKey: ((NumpadKey) -> Bool)?

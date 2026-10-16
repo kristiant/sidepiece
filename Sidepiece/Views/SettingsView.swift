@@ -1,4 +1,7 @@
 import SwiftUI
+import OSLog
+
+private let logger = Logger(category: "Settings")
 
 struct SettingsView: View {
     private enum Tab: String, CaseIterable {
@@ -374,7 +377,7 @@ struct GeneralSettingsView: View {
                     to: url
                 )
             } catch {
-                print("Sidepiece: export failed: \(error)")
+                logger.error("Export failed: \(error)")
             }
         }
     }
@@ -390,7 +393,7 @@ struct GeneralSettingsView: View {
                 let data = try configurationManager.importUnifiedData(from: url)
                 snippetRepository.importData(snippets: data.snippets, categories: data.categories)
             } catch {
-                print("Sidepiece: import failed: \(error)")
+                logger.error("Import failed: \(error)")
             }
         }
     }

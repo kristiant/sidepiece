@@ -6,7 +6,7 @@ import OSLog
 @MainActor
 final class SidepieceEngine: ObservableObject {
     static let shared = SidepieceEngine()
-    private let logger = Logger(subsystem: "com.sidepiece.app", category: "Engine")
+    private let logger = Logger(category: "Engine")
 
     private let configManager = ConfigurationManager.shared
     private let snippetRepo = SnippetRepository.shared

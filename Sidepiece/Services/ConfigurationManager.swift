@@ -1,10 +1,12 @@
 import Foundation
 import SwiftUI
 import ServiceManagement
+import OSLog
 
 @MainActor
 final class ConfigurationManager: ObservableObject {
     static let shared = ConfigurationManager()
+    private let logger = Logger(category: "Config")
     
     // MARK: - Published Properties
     
@@ -62,7 +64,7 @@ final class ConfigurationManager: ObservableObject {
         do {
             configuration.launchAtLogin ? try SMAppService.mainApp.register() : try SMAppService.mainApp.unregister()
         } catch {
-            print("Sidepiece: login item update failed: \(error)")
+            logger.error("Login item update failed: \(error)")
         }
     }
     
