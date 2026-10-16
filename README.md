@@ -1,95 +1,38 @@
 # Sidepiece
 
-> Your numpad's new best friend 🎹
-
-A macOS menu bar utility that transforms your numpad into a powerful clipboard shortcut system. Press a numpad key, get your pre-configured text snippet copied to your clipboard—ready to paste.
+A macOS menu bar app that turns your numpad into a snippet and shortcut pad.
 
 ## Features
 
-- **Menu Bar App** — Lives quietly in your top menu bar, always ready
-- **Numpad Shortcuts** — Map any numpad key (0-9, +, -, *, /, =, Enter, Clear) to a text snippet
-- **F-Key Support** — Extend your shortcuts with F1-F12 keys
-- **Multiple Profiles** — Switch between different snippet sets for work, personal, or project-specific use
-- **Offline First** — All data stored locally. No accounts, no cloud, no tracking
-- **Fast & Lightweight** — Native Swift app with minimal resource usage
+- Bind numpad keys, F1 to F19, Page Up/Down, End and Delete to actions
+- Actions:
+  - paste a snippet
+  - open a folder of snippets
+  - switch or cycle profiles
+  - launch an app
+  - run a shell command
+  - window functions (cycle windows, App Exposé, Mission Control)
+- Folders of snippets, navigated with keys 1 to 9 and 0 or Clear to go back
+- On-screen HUD with a peek panel. While it is open, the number row works too, for keyboards without a numpad
+- Multiple profiles
+- Import and export everything as JSON
+- All data stays local in `~/Library/Application Support/Sidepiece/`
 
 ## Requirements
 
-- macOS 13.0 (Ventura) or later
-- Accessibility permissions (for global hotkey detection)
+- macOS 13 or later
+- Accessibility access, so Sidepiece can see key presses in other apps
 
-## Installation
+## Build
 
-### From Releases
-1. Download the latest `.dmg` from [Releases](https://github.com/kristiant/sidepiece/releases)
-2. Drag **Sidepiece** to your Applications folder
-3. Launch and grant Accessibility permissions when prompted
+Needs Xcode 15 and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
-### Build from Source
 ```bash
-# Clone the repository
-git clone https://github.com/kristiant/sidepiece.git
-cd sidepiece
-
-# Open in Xcode
-open Sidepiece.xcodeproj
-
-# Build and run (⌘R)
+scripts/build_and_run.sh
 ```
 
-## Usage
-
-1. **Launch Sidepiece** — The icon appears in your menu bar
-2. **Configure Snippets** — Click the menu bar icon → Preferences
-3. **Bind Keys** — Assign your frequently used text to numpad keys
-4. **Use It** — Press a numpad key anywhere, your snippet is copied!
-5. **Paste** — ⌘V to paste your snippet
-
-### Example Use Cases
-
-- **Email templates** — Quick responses bound to Num1-Num5
-- **Code snippets** — Console.log, import statements, boilerplate
-- **AI prompts** — Your favourite ChatGPT/Claude prompts at a keypress
-- **Contact info** — Email, phone, address on demand
-- **Signatures** — Different signatures for different contexts
-
-## Permissions
-
-Sidepiece requires **Accessibility** permissions to detect global key presses:
-
-1. System Settings → Privacy & Security → Accessibility
-2. Enable Sidepiece in the list
-
-Without this permission, the app cannot detect numpad presses when other apps are in focus.
-
-## Data Storage
-
-All data is stored locally in:
-```
-~/Library/Application Support/Sidepiece/
-```
-
-Your snippets never leave your machine.
-
-## Roadmap
-
-- [x] Core numpad key detection
-- [x] Basic snippet management
-- [ ] Multiple profiles
-- [ ] Snippet categories & tags
-- [ ] Template variables (date, time, clipboard contents)
-- [ ] Application-specific auto-switching
-- [ ] Import/export configurations
-- [ ] Keyboard shortcut overlay
-
-## Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+Then enable Sidepiece in System Settings > Privacy & Security > Accessibility. If key presses stop working after a rebuild, run `scripts/reset_permissions.sh` and grant access again.
 
 ## Licence
 
 [MIT](LICENCE)
-
----
-
-Made with ☕ in Melbourne
